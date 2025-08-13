@@ -18,9 +18,8 @@
   button:hover { background-color: #2980b9; }
   .danger-btn { background-color: #e74c3c; }
   .danger-btn:hover { background-color: #c0392b; }
-  select, input[type="text"], input[type="password"] { padding: 10px; width: 100%; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
-  input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
-  .diag { font-size: 12px; color: #555; }
+  select, input[type="text"], input[type="password"], input[type="date"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+  input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -33,14 +32,15 @@
   <h2>Secure Login</h2>
   <label>Username:<input type="text" id="username" placeholder="Enter username"></label>
   <label>Password:<input type="password" id="password" placeholder="Enter password"></label>
-  <button id="loginBtn">Login</button>
+  <button onclick="login()">Login</button>
   <p id="login-message" style="color:red;"></p>
-  <div id="diag" class="diag"></div>
 </div>
 
 <div id="attendance-section" class="hidden">
   <h2>Mark Attendance</h2>
   <label>Select Day: <select id="day-select" onchange="loadAttendance()"></select></label>
+  <label>Date: <input type="date" id="date-select"></label>
+  <label>Saved Records: <select id="saved-dates" onchange="loadFromHistory()"></select></label>
   <table id="attendance-table">
     <thead>
       <tr id="table-header"></tr>
@@ -48,33 +48,29 @@
     <tbody id="attendance-body"></tbody>
   </table>
   <button onclick="saveAttendance()">Save Attendance</button>
-  <button onclick="loadAttendance()">Load Attendance</button>
+  <button onclick="exportCSV()">Export as CSV</button>
   <button onclick="logout()" class="danger-btn">Logout</button>
 </div>
 
 </div>
 
 <script type="module">
-  // Firebase v9 modular SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-  // --- Firebase config ---
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
     projectId: "attendance-dd096",
-    storageBucket: "attendance-dd096.appspot.com",
+    storageBucket: "attendance-dd096.firebasestorage.app",
     messagingSenderId: "1064169386680",
     appId: "1:1064169386680:web:301de8d261c27216aeba4d",
     measurementId: "G-6XS9BM0852"
   };
 
-  // Init Firebase/Firestore
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // --- App data ---
   const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
 
   const students = [
@@ -83,6 +79,7 @@
     "R23XV1M6703 - Ananthula Akhil Kumar",
     "R23XV1M6704 - Arudra Thrived Sai",
     "R23XV1M6705 - Asmita Samayam"
+    // ... all other students
   ];
 
   const subjectsByDay = {
@@ -94,25 +91,22 @@
     'Saturday': ['Aptitude Class']
   };
 
-  // --- UI wiring ---
-  const loginBtn = document.getElementById('loginBtn');
-  loginBtn.addEventListener('click', onLogin);
-
-  function onLogin() {
+  window.login = async function () {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
     if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('attendance-section').classList.remove('hidden');
       populateDayDropdown();
-      document.getElementById('day-select').selectedIndex = 0;
-      loadAttendance();
+      document.getElementById('date-select').value = new Date().toISOString().split('T')[0];
+      buildTable(subjectsByDay['Monday']);
+      await loadSavedDates();
     } else {
       document.getElementById('login-message').textContent = '❌ Invalid username or password';
     }
   }
 
-  function logout() {
+  window.logout = function () {
     document.getElementById('attendance-section').classList.add('hidden');
     document.getElementById('login-section').classList.remove('hidden');
   }
@@ -140,8 +134,10 @@
     });
   }
 
-  async function saveAttendance() {
+  window.saveAttendance = async function () {
     const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
     const rows = document.querySelectorAll('#attendance-body tr');
     const subjects = subjectsByDay[day];
     const data = {};
@@ -152,45 +148,76 @@
         data[student].push(row.cells[i].firstChild.checked);
       }
     });
-    await setDoc(doc(db, 'attendance', day), data);
-    alert('✅ Attendance saved to Firestore!');
+    await setDoc(doc(db, "attendance", docId), data);
+    alert(`✅ Attendance saved for ${day} (${date})`);
+    await loadSavedDates();
   }
 
-  async function loadAttendance() {
+  window.loadAttendance = async function () {
     const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
     buildTable(subjectsByDay[day]);
-    const snap = await getDoc(doc(db, 'attendance', day));
-    if (snap.exists()) {
-      const data = snap.data();
+    const docSnap = await getDoc(doc(db, "attendance", docId));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
       const rows = document.querySelectorAll('#attendance-body tr');
       rows.forEach(row => {
         const student = row.cells[0].textContent;
         if (data[student]) {
           data[student].forEach((present, idx) => {
-            row.cells[idx + 1].firstChild.checked = !!present;
+            row.cells[idx + 1].firstChild.checked = present;
           });
         }
       });
     }
   }
 
-  // --- Expose functions to global for inline handlers ---
-  // (Because this script uses type="module", functions are scoped to the module by default.)
-  window.saveAttendance = saveAttendance;
-  window.loadAttendance  = loadAttendance;
-  window.logout          = logout;
+  async function loadSavedDates() {
+    const select = document.getElementById('saved-dates');
+    select.innerHTML = '<option value="">-- Select Saved Record --</option>';
+    const querySnapshot = await getDocs(collection(db, "attendance"));
+    querySnapshot.forEach(docSnap => {
+      const option = document.createElement('option');
+      option.value = docSnap.id;
+      option.textContent = docSnap.id;
+      select.appendChild(option);
+    });
+  }
 
-  // --- Minimal diagnostics (test cases) ---
-  (function runDiagnostics(){
-    const log = [];
-    log.push(['global saveAttendance', typeof window.saveAttendance === 'function']);
-    log.push(['global loadAttendance', typeof window.loadAttendance === 'function']);
-    log.push(['global logout', typeof window.logout === 'function']);
-    log.push(['Firestore initialized', !!db]);
-    document.getElementById('diag').textContent =
-      'Diagnostics → ' + log.map(([k,v]) => `${k}: ${v ? 'OK' : 'FAIL'}`).join(' | ');
-    console.table(log.map(([k,v]) => ({ check: k, ok: !!v })));
-  })();
+  window.loadFromHistory = function () {
+    const recordId = document.getElementById('saved-dates').value;
+    if (!recordId) return;
+    const [day, date] = recordId.split('_');
+    document.getElementById('day-select').value = day;
+    document.getElementById('date-select').value = date;
+    loadAttendance();
+  }
+
+  window.exportCSV = async function () {
+    const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
+    const docSnap = await getDoc(doc(db, "attendance", docId));
+    if (!docSnap.exists()) {
+      alert("❌ No data found for this date");
+      return;
+    }
+    const data = docSnap.data();
+    let csvContent = `Date,${date},Day,${day}\n`;
+    csvContent += 'Student,' + subjectsByDay[day].join(',') + '\n';
+    Object.keys(data).forEach(student => {
+      csvContent += student + ',' + data[student].map(p => p ? 'Present' : 'Absent').join(',') + '\n';
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Attendance_${day}_${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 </script>
 </body>
 </html>
