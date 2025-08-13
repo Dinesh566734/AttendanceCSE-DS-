@@ -4,24 +4,22 @@
 <meta charset="UTF-8">
 <title>Attendance System For CSE(DS)</title>
 <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
-  header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
+  header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
   .container { max-width: 1100px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   h2 { margin-top: 0; color: #2c3e50; }
   .hidden { display: none; }
-  table { border-collapse: collapse; width: 100%; margin-top: 20px; border-radius: 6px; overflow: hidden; }
+  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
   th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-  th { background-color: #34495e; color: white; font-weight: 500; }
+  th { background-color: #34495e; color: white; }
   tr:nth-child(even) { background-color: #f8f9fb; }
   tr:hover { background-color: #f1f5f9; }
-  button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; font-size: 15px; transition: background 0.3s ease; }
+  button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; }
   button:hover { background-color: #2980b9; }
   .danger-btn { background-color: #e74c3c; }
   .danger-btn:hover { background-color: #c0392b; }
-  select, input[type="text"], input[type="password"] { padding: 10px; width: 100%; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-  .form-group { margin-bottom: 15px; }
-  #login-section { max-width: 400px; margin: auto; text-align: left; }
-  input[type="checkbox"] { width: 25px; height: 25px; cursor: pointer; }
+  select, input[type="text"], input[type="password"], input[type="date"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+  input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -29,238 +27,285 @@
   <h1>Attendance Management System for CSE(DS)</h1>
 </header>
 <div class="container">
+
 <div id="login-section">
   <h2>Secure Login</h2>
-  <div class="form-group"><label>Username:<br><input type="text" id="username" placeholder="Enter your username"></label></div>
-  <div class="form-group"><label>Password:<br><input type="password" id="password" placeholder="Enter your password"></label></div>
+  <label>Username:<input type="text" id="username" placeholder="Enter username"></label>
+  <label>Password:<input type="password" id="password" placeholder="Enter password"></label>
   <button onclick="login()">Login</button>
-  <p id="login-message" style="color:red; font-weight: 500;"></p>
+  <p id="login-message" style="color:red;"></p>
 </div>
 
 <div id="attendance-section" class="hidden">
   <h2>Mark Attendance</h2>
-  <label>Select Day: <select id="day-select" onchange="updateSubjects()"></select></label>
-  <input type="text" id="new-subject" placeholder="Enter new subject name">
-  <button onclick="addSubject()">Add Subject</button>
+  <h2 style="color:red;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h2>
+  
+  <label>Select Day: <select id="day-select" onchange="loadAttendance()"></select></label>
+  <label>Date: <input type="date" id="date-select"></label>
+  <label>Saved Records: <select required id="saved-dates" onchange="loadFromHistory()"></select></label>
+
+  <!-- Add class input -->
+  <div>
+    <input type="text" id="new-class-name" placeholder="Enter new class/subject">
+    <button onclick="addClassColumn()">Add Class</button>
+  </div>
+
   <table id="attendance-table">
     <thead>
       <tr id="table-header"></tr>
     </thead>
     <tbody id="attendance-body"></tbody>
   </table>
+  <button onclick="saveAttendance()">Save Attendance</button>
   <button onclick="exportCSV()">Export as CSV</button>
   <button onclick="logout()" class="danger-btn">Logout</button>
 </div>
+
 </div>
 
-<script>
-const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
-const EXPIRY_HOURS = 24;
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-const students = [
- "R23XV1M6701 - Addanki Harshitha",
-  "R23XV1M6702 - Agalduvity Rohit",
-  "R23XV1M6703 - Ananthula Akhil Kumar",
-  "R23XV1M6704 - Arudra Thrived Sai",
-  "R23XV1M6705 - Asmita Samayam",
-  "R23XV1M6706 - Bolladi Yashwanth Reddy",
-  "R23XV1M6707 - Chanda Pranav",
-  "R23XV1M6708 - Chiguru Varun",
-  "R23XV1M6709 - Duddu Harshavardhan",
-  "R23XV1M6710 - Gadde Yaksha",
-  "R23XV1M6711 - Gannavarapu Sai Jaiwanth",
-  "R23XV1M6712 - Gopagani Prabhas Aryan",
-  "R23XV1M6713 - Gorijavolu Ramphani Prasad",
-  "R23XV1M6714 - GVS Lalitha Siva Priya",
-  "R23XV1M6715 - Jerripotula Dharan Premjee",
-  "R23XV1M6716 - Kadiri Hitesh Reddy",
-  "R23XV1M6717 - Kandagaddala Lakshmi Venkateswarachaitanya",
-  "R23XV1M6718 - Kandagaddala Lakshmi Vyshnavi",
-  "R23XV1M6719 - Katta Yogith Reddy",
-  "R23XV1M6720 - Kotha Venkata Sourav Sohil",
-  "R23XV1M6721 - Krapa Harsha Vardhan",
-  "R23XV1M6722 - Kuntla Sri Sahithi",
-  "R23XV1M6723 - Lalithadithya Reddy Chintalapudi",
-  "R23XV1M6724 - Manaswini Koratagiri",
-  "R23XV1M6725 - Manikanti Gayatri Reddy",
-  "R23XV1M6726 - Maranani Dinesh Kumar",
-  "R23XV1M6727 - Mohammed Nahid Hasan",
-  "R23XV1M6728 - Mothe Venkatnath Reddy",
-  "R23XV1M6729 - Moturu Sai Gagana Laasya",
-  "R23XV1M6730 - Muppidi Saika Brinda",
-  "R23XV1M6731 - Pasumarthi Vaibhav",
-  "R23XV1M6732 - Rishika Cherupelly",
-  "R23XV1M6733 - Rohan Sreeharsha Srikakulam",
-  "R23XV1M6734 - Saathvik Varma Mandapati",
-  "R23XV1M6735 - Shaik Taufeeq Ahmad",
-  "R23XV1M6736 - Shrihari Bhide",
-  "R23XV1M6737 - Sonti Krishna Keerthana",
-  "R23XV1M6738 - Sowmya Adluri",
-  "R23XV1M6739 - Sresta Bhupathi",
-  "R23XV1M6740 - Supraja Ananthula",
-  "R23XV1M6741 - T Shashidhar Yadav",
-  "R23XV1M6742 - Talabhattula Dheeraj Krishna",
-  "R23XV1M6743 - Tanmay Gunnam",
-  "R23XV1M6744 - Tata Sucheth",
-  "R23XV1M6745 - Tera Daiva Prem",
-  "R23XV1M6746 - Tumma Nikhil Kumar",
-  "R23XV1M6747 - V Arun Raj Goud",
-  "R23XV1M6748 - Valluri Vamshi Krishna Bharadwaj",
-  "R23XV1M6749 - Vuddanti Hima Varenya",
-  "R23XV1M6750 - Yamini Lokesh",
-  "NR23XV1M6751 - Sangeetam Abhishek Naidu",
-  "NR23XV1M6752 - Chopperla Sailakshmi Harini",
-  "NR23XV1M6753 - Surapureddy Rahul",
-  "NR23XV1M6754 - K Venkata Pallavi",
-  "NR23XV1M6755 - Bolisetty Subbarayudu",
-  "NR23XV1M6756 - Chunduru Sasank Vardhan",
-  "NR23XV1M6757 - Karra Lakshmi Abhinav Sivesh",
-  "NR23XV1M6758 - Sibani Tiwari",
-  "NR23XV1M6759 - Venumuddala Rishi",
-  "NR23XV1M6760 - Venkatesh Tadepalli"
-];
+  const firebaseConfig = {
+    apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
+    authDomain: "attendance-dd096.firebaseapp.com",
+    projectId: "attendance-dd096",
+    storageBucket: "attendance-dd096.firebasestorage.app",
+    messagingSenderId: "1064169386680",
+    appId: "1:1064169386680:web:301de8d261c27216aeba4d",
+    measurementId: "G-6XS9BM0852"
+  };
 
-const subjectsByDay = {
-  'Monday': ['AI', 'ADA', 'CN-Lab', 'SMD'],
-  'Tuesday': ['IDA', 'AI', 'ADA', 'ACS-Lab'],
-  'Wednesday': ['IDA', 'Assignment', 'CN', 'SMD', 'KOFKA'],
-  'Thursday': ['IDA', 'R-Lab', 'CN', 'IPR'],
-  'Friday': ['AI', 'CN-Lab Assignment', 'IDA', 'Hackathon'],
-  'Saturday': ['Aptitude Class']
-};
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-function login() {
-  const user = document.getElementById('username').value.trim();
-  const pass = document.getElementById('password').value.trim();
-  if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('attendance-section').classList.remove('hidden');
-    populateDayDropdown();
-    updateSubjects();
-  } else {
-    document.getElementById('login-message').textContent = '❌ Invalid username or password';
-  }
-}
+  const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
 
-function logout() {
-  document.getElementById('attendance-section').classList.add('hidden');
-  document.getElementById('login-section').classList.remove('hidden');
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
-}
+  const students = [
+    "R23XV1M6701 - Addanki Harshitha",
+    "R23XV1M6702 - Agalduvity Rohit",
+    "R23XV1M6703 - Ananthula Akhil Kumar",
+    "R23XV1M6704 - Arudra Thrived Sai",
+    "R23XV1M6705 - Asmita Samayam",
+    "R23XV1M6706 - Bolladi Yashwanth Reddy",
+    "R23XV1M6707 - Chanda Pranav",
+    "R23XV1M6708 - Chiguru Varun",
+    "R23XV1M6709 - Duddu Harshavardhan",
+    "R23XV1M6710 - Gadde Yaksha",
+    "R23XV1M6711 - Gannavarapu Sai Jaiwanth",
+    "R23XV1M6712 - Gopagani Prabhas Aryan",
+    "R23XV1M6713 - Gorijavolu Ramphani Prasad",
+    "R23XV1M6714 - GVS Lalitha Siva Priya",
+    "R23XV1M6715 - Jerripotula Dharan Premjee",
+    "R23XV1M6716 - Kadiri Hitesh Reddy",
+    "R23XV1M6717 - Kandagaddala Lakshmi Venkateswarachaitanya",
+    "R23XV1M6718 - Kandagaddala Lakshmi Vyshnavi",
+    "R23XV1M6719 - Katta Yogith Reddy",
+    "R23XV1M6720 - Kotha Venkata Sourav Sohil",
+    "R23XV1M6721 - Krapa Harsha Vardhan",
+    "R23XV1M6722 - Kuntla Sri Sahithi",
+    "R23XV1M6723 - Lalithadithya Reddy Chintalapudi",
+    "R23XV1M6724 - Manaswini Koratagiri",
+    "R23XV1M6725 - Manikanti Gayatri Reddy",
+    "R23XV1M6726 - Maranani Dinesh Kumar",
+    "R23XV1M6727 - Mohammed Nahid Hasan",
+    "R23XV1M6728 - Mothe Venkatnath Reddy",
+    "R23XV1M6729 - Moturu Sai Gagana Laasya",
+    "R23XV1M6730 - Muppidi Saika Brinda",
+    "R23XV1M6731 - Pasumarthi Vaibhav",
+    "R23XV1M6732 - Rishika Cherupelly",
+    "R23XV1M6733 - Rohan Sreeharsha Srikakulam",
+    "R23XV1M6734 - Saathvik Varma Mandapati",
+    "R23XV1M6735 - Shaik Taufeeq Ahmad",
+    "R23XV1M6736 - Shrihari Bhide",
+    "R23XV1M6737 - Sonti Krishna Keerthana",
+    "R23XV1M6738 - Sowmya Adluri",
+    "R23XV1M6739 - Sresta Bhupathi",
+    "R23XV1M6740 - Supraja Ananthula",
+    "R23XV1M6741 - T Shashidhar Yadav",
+    "R23XV1M6742 - Talabhattula Dheeraj Krishna",
+    "R23XV1M6743 - Tanmay Gunnam",
+    "R23XV1M6744 - Tata Sucheth",
+    "R23XV1M6745 - Tera Daiva Prem",
+    "R23XV1M6746 - Tumma Nikhil Kumar",
+    "R23XV1M6747 - V Arun Raj Goud",
+    "R23XV1M6748 - Valluri Vamshi Krishna Bharadwaj",
+    "R23XV1M6749 - Vuddanti Hima Varenya",
+    "R23XV1M6750 - Yamini Lokesh",
+    "NR23XV1M6751 - Sangeetam Abhishek Naidu",
+    "NR23XV1M6752 - Chopperla Sailakshmi Harini",
+    "NR23XV1M6753 - Surapureddy Rahul",
+    "NR23XV1M6754 - K Venkata Pallavi",
+    "NR23XV1M6755 - Bolisetty Subbarayudu",
+    "NR23XV1M6756 - Chunduru Sasank Vardhan",
+    "NR23XV1M6757 - Karra Lakshmi Abhinav Sivesh",
+    "NR23XV1M6758 - Sibani Tiwari",
+    "NR23XV1M6759 - Venumuddala Rishi",
+    "NR23XV1M6760 - Venkatesh Tadepalli"
+  ];
 
-function populateDayDropdown() {
-  const select = document.getElementById('day-select');
-  select.innerHTML = '';
-  Object.keys(subjectsByDay).forEach(day => {
-    const option = document.createElement('option');
-    option.value = day;
-    option.textContent = day;
-    select.appendChild(option);
-  });
-}
+  const subjectsByDay = {
+    'Monday': ['AI', 'ADA', 'CN-Lab', 'SMD'],
+    'Tuesday': ['IDA', 'AI', 'ADA', 'ACS-Lab'],
+    'Wednesday': ['IDA', 'Assignment', 'CN', 'SMD', 'KOFKA'],
+    'Thursday': ['IDA', 'R-Lab', 'CN', 'IPR'],
+    'Friday': ['AI', 'CN-Lab Assignment', 'IDA', 'Hackathon'],
+    'Saturday': ['Aptitude Class']
+  };
 
-function updateSubjects() {
-  const day = document.getElementById('day-select').value;
-  const subjects = subjectsByDay[day];
-  const headerRow = document.getElementById('table-header');
-  headerRow.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
-  buildTable(subjects.length);
-}
-
-function addSubject() {
-  const newSubject = document.getElementById('new-subject').value.trim();
-  const day = document.getElementById('day-select').value;
-  if (newSubject && day) {
-    subjectsByDay[day].push(newSubject);
-    document.getElementById('new-subject').value = '';
-    updateSubjects();
-  } else {
-    alert('Please enter a subject name');
-  }
-}
-
-function saveAttendance() {
-  const day = document.getElementById('day-select').value;
-  const rows = document.querySelectorAll('#attendance-body tr');
-  const data = [];
-  rows.forEach(row => {
-    const student = row.cells[0].textContent;
-    const attendance = [];
-    for (let i = 1; i < row.cells.length; i++) {
-      attendance.push(row.cells[i].firstChild.checked);
+  window.login = async function () {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('attendance-section').classList.remove('hidden');
+      populateDayDropdown();
+      document.getElementById('date-select').value = new Date().toISOString().split('T')[0];
+      buildTable(subjectsByDay['Monday']);
+      await loadSavedDates();
+    } else {
+      document.getElementById('login-message').textContent = '❌ Invalid username or password';
     }
-    data.push({ student, attendance });
-  });
-  const record = { data, timestamp: Date.now() };
-  localStorage.setItem(`attendance_${day}`, JSON.stringify(record));
-}
-
-function loadAttendance() {
-  const day = document.getElementById('day-select').value;
-  const saved = localStorage.getItem(`attendance_${day}`);
-  if (!saved) return;
-
-  const record = JSON.parse(saved);
-  if ((Date.now() - record.timestamp) > EXPIRY_HOURS * 60 * 60 * 1000) {
-    localStorage.removeItem(`attendance_${day}`);
-    return;
   }
 
-  const rows = document.querySelectorAll('#attendance-body tr');
-  record.data.forEach((item, index) => {
-    for (let i = 0; i < item.attendance.length; i++) {
-      rows[index].cells[i + 1].firstChild.checked = item.attendance[i];
+  window.logout = function () {
+    document.getElementById('attendance-section').classList.add('hidden');
+    document.getElementById('login-section').classList.remove('hidden');
+  }
+
+  function populateDayDropdown() {
+    const select = document.getElementById('day-select');
+    select.innerHTML = '';
+    Object.keys(subjectsByDay).forEach(day => {
+      const option = document.createElement('option');
+      option.value = day;
+      option.textContent = day;
+      select.appendChild(option);
+    });
+  }
+
+  function buildTable(subjects, existingData = {}) {
+    const headerRow = document.getElementById('table-header');
+    headerRow.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
+    const tbody = document.getElementById('attendance-body');
+    tbody.innerHTML = '';
+    students.forEach(student => {
+      const row = document.createElement('tr');
+      let rowHTML = `<td>${student}</td>`;
+      subjects.forEach((sub, idx) => {
+        const checked = existingData[student]?.[idx] ? 'checked' : '';
+        rowHTML += `<td><input type="checkbox" ${checked}></td>`;
+      });
+      row.innerHTML = rowHTML;
+      tbody.appendChild(row);
+    });
+  }
+
+  window.addClassColumn = function () {
+    const newClass = document.getElementById('new-class-name').value.trim();
+    if (!newClass) {
+      alert("❌ Please enter a class name");
+      return;
     }
-  });
-}
-
-function buildTable(subjectCount) {
-  const tbody = document.getElementById('attendance-body');
-  tbody.innerHTML = '';
-  students.forEach(student => {
-    const row = document.createElement('tr');
-    const nameCell = document.createElement('td');
-    nameCell.textContent = student;
-    row.appendChild(nameCell);
-    for (let j = 0; j < subjectCount; j++) {
-      const cell = document.createElement('td');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.addEventListener('change', saveAttendance);
-      cell.appendChild(checkbox);
-      row.appendChild(cell);
+    const day = document.getElementById('day-select').value;
+    const subjects = subjectsByDay[day];
+    if (subjects.includes(newClass)) {
+      alert("⚠ This class already exists for today.");
+      return;
     }
-    tbody.appendChild(row);
-  });
-  loadAttendance();
-}
+    const existingData = {};
+    const rows = document.querySelectorAll('#attendance-body tr');
+    rows.forEach(row => {
+      const student = row.cells[0].textContent;
+      existingData[student] = [];
+      for (let i = 1; i < row.cells.length; i++) {
+        existingData[student].push(row.cells[i].firstChild.checked);
+      }
+    });
+    subjects.push(newClass);
+    buildTable(subjects, existingData);
+    document.getElementById('new-class-name').value = '';
+  };
 
-function exportCSV() {
-  const day = document.getElementById('day-select').value;
-  const rows = document.querySelectorAll('#attendance-body tr');
-  const headerSubjects = subjectsByDay[day];
-  let csvContent = `Date,${new Date().toLocaleDateString()},Day,${day}\n`;
-  csvContent += 'Student,' + headerSubjects.join(',') + '\n';
+  window.saveAttendance = async function () {
+    const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
+    const rows = document.querySelectorAll('#attendance-body tr');
+    const subjects = subjectsByDay[day];
+    const data = {};
+    rows.forEach(row => {
+      const student = row.cells[0].textContent;
+      data[student] = [];
+      for (let i = 1; i <= subjects.length; i++) {
+        data[student].push(row.cells[i].firstChild.checked);
+      }
+    });
+    await setDoc(doc(db, "attendance", docId), { subjects, data });
+    alert(`✅ Attendance saved for ${day} (${date})`);
+    await loadSavedDates();
+  }
 
-  rows.forEach(row => {
-    const studentName = row.cells[0].textContent;
-    const attendance = [];
-    for (let i = 1; i < row.cells.length; i++) {
-      attendance.push(row.cells[i].firstChild.checked ? 'Present' : 'Absent');
+  window.loadAttendance = async function () {
+    const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
+    const docSnap = await getDoc(doc(db, "attendance", docId));
+    if (docSnap.exists()) {
+      const saved = docSnap.data();
+      subjectsByDay[day] = saved.subjects || subjectsByDay[day];
+      buildTable(subjectsByDay[day], saved.data);
+    } else {
+      buildTable(subjectsByDay[day]);
     }
-    csvContent += [studentName, ...attendance].join(',') + '\n';
-  });
+  }
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `CSE(DS)attendance_${day}_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
+  async function loadSavedDates() {
+    const select = document.getElementById('saved-dates');
+    select.innerHTML = '<option value="">-- Select Saved Record --</option>';
+    const querySnapshot = await getDocs(collection(db, "attendance"));
+    querySnapshot.forEach(docSnap => {
+      const option = document.createElement('option');
+      option.value = docSnap.id;
+      option.textContent = docSnap.id;
+      select.appendChild(option);
+    });
+  }
+
+  window.loadFromHistory = function () {
+    const recordId = document.getElementById('saved-dates').value;
+    if (!recordId) return;
+    const [day, date] = recordId.split('_');
+    document.getElementById('day-select').value = day;
+    document.getElementById('date-select').value = date;
+    loadAttendance();
+  }
+
+  window.exportCSV = async function () {
+    const day = document.getElementById('day-select').value;
+    const date = document.getElementById('date-select').value;
+    const docId = `${day}_${date}`;
+    const docSnap = await getDoc(doc(db, "attendance", docId));
+    if (!docSnap.exists()) {
+      alert("❌ No data found for this date");
+      return;
+    }
+    const saved = docSnap.data();
+    let csvContent = `Date,${date},Day,${day}\n`;
+    csvContent += 'Student,' + saved.subjects.join(',') + '\n';
+    Object.keys(saved.data).forEach(student => {
+      csvContent += student + ',' + saved.data[student].map(p => p ? 'Present' : 'Absent').join(',') + '\n';
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Attendance_${day}_${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 </script>
 </body>
 </html>
