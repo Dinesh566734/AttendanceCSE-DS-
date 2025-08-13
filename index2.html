@@ -38,9 +38,11 @@
 
 <div id="attendance-section" class="hidden">
   <h2>Mark Attendance</h2>
+  <h2 style="color:red;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h2>
+  
   <label>Select Day: <select id="day-select" onchange="loadAttendance()"></select></label>
   <label>Date: <input type="date" id="date-select"></label>
-  <label>Saved Records: <select id="saved-dates" onchange="loadFromHistory()"></select></label>
+  <label>Saved Records: <select required id="saved-dates" onchange="loadFromHistory()"></select></label>
   <table id="attendance-table">
     <thead>
       <tr id="table-header"></tr>
@@ -74,12 +76,66 @@
   const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
 
   const students = [
-    "R23XV1M6701 - Addanki Harshitha",
-    "R23XV1M6702 - Agalduvity Rohit",
-    "R23XV1M6703 - Ananthula Akhil Kumar",
-    "R23XV1M6704 - Arudra Thrived Sai",
-    "R23XV1M6705 - Asmita Samayam"
-    // ... all other students
+     "R23XV1M6701 - Addanki Harshitha",
+  "R23XV1M6702 - Agalduvity Rohit",
+  "R23XV1M6703 - Ananthula Akhil Kumar",
+  "R23XV1M6704 - Arudra Thrived Sai",
+  "R23XV1M6705 - Asmita Samayam",
+  "R23XV1M6706 - Bolladi Yashwanth Reddy",
+  "R23XV1M6707 - Chanda Pranav",
+  "R23XV1M6708 - Chiguru Varun",
+  "R23XV1M6709 - Duddu Harshavardhan",
+  "R23XV1M6710 - Gadde Yaksha",
+  "R23XV1M6711 - Gannavarapu Sai Jaiwanth",
+  "R23XV1M6712 - Gopagani Prabhas Aryan",
+  "R23XV1M6713 - Gorijavolu Ramphani Prasad",
+  "R23XV1M6714 - GVS Lalitha Siva Priya",
+  "R23XV1M6715 - Jerripotula Dharan Premjee",
+  "R23XV1M6716 - Kadiri Hitesh Reddy",
+  "R23XV1M6717 - Kandagaddala Lakshmi Venkateswarachaitanya",
+  "R23XV1M6718 - Kandagaddala Lakshmi Vyshnavi",
+  "R23XV1M6719 - Katta Yogith Reddy",
+  "R23XV1M6720 - Kotha Venkata Sourav Sohil",
+  "R23XV1M6721 - Krapa Harsha Vardhan",
+  "R23XV1M6722 - Kuntla Sri Sahithi",
+  "R23XV1M6723 - Lalithadithya Reddy Chintalapudi",
+  "R23XV1M6724 - Manaswini Koratagiri",
+  "R23XV1M6725 - Manikanti Gayatri Reddy",
+  "R23XV1M6726 - Maranani Dinesh Kumar",
+  "R23XV1M6727 - Mohammed Nahid Hasan",
+  "R23XV1M6728 - Mothe Venkatnath Reddy",
+  "R23XV1M6729 - Moturu Sai Gagana Laasya",
+  "R23XV1M6730 - Muppidi Saika Brinda",
+  "R23XV1M6731 - Pasumarthi Vaibhav",
+  "R23XV1M6732 - Rishika Cherupelly",
+  "R23XV1M6733 - Rohan Sreeharsha Srikakulam",
+  "R23XV1M6734 - Saathvik Varma Mandapati",
+  "R23XV1M6735 - Shaik Taufeeq Ahmad",
+  "R23XV1M6736 - Shrihari Bhide",
+  "R23XV1M6737 - Sonti Krishna Keerthana",
+  "R23XV1M6738 - Sowmya Adluri",
+  "R23XV1M6739 - Sresta Bhupathi",
+  "R23XV1M6740 - Supraja Ananthula",
+  "R23XV1M6741 - T Shashidhar Yadav",
+  "R23XV1M6742 - Talabhattula Dheeraj Krishna",
+  "R23XV1M6743 - Tanmay Gunnam",
+  "R23XV1M6744 - Tata Sucheth",
+  "R23XV1M6745 - Tera Daiva Prem",
+  "R23XV1M6746 - Tumma Nikhil Kumar",
+  "R23XV1M6747 - V Arun Raj Goud",
+  "R23XV1M6748 - Valluri Vamshi Krishna Bharadwaj",
+  "R23XV1M6749 - Vuddanti Hima Varenya",
+  "R23XV1M6750 - Yamini Lokesh",
+  "NR23XV1M6751 - Sangeetam Abhishek Naidu",
+  "NR23XV1M6752 - Chopperla Sailakshmi Harini",
+  "NR23XV1M6753 - Surapureddy Rahul",
+  "NR23XV1M6754 - K Venkata Pallavi",
+  "NR23XV1M6755 - Bolisetty Subbarayudu",
+  "NR23XV1M6756 - Chunduru Sasank Vardhan",
+  "NR23XV1M6757 - Karra Lakshmi Abhinav Sivesh",
+  "NR23XV1M6758 - Sibani Tiwari",
+  "NR23XV1M6759 - Venumuddala Rishi",
+  "NR23XV1M6760 - Venkatesh Tadepalli"
   ];
 
   const subjectsByDay = {
