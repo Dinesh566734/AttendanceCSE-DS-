@@ -54,9 +54,10 @@
 
 <script>
 const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
+const EXPIRY_HOURS = 24;
 
 const students = [
-  "R23XV1M6701 - Addanki Harshitha",
+ "R23XV1M6701 - Addanki Harshitha",
   "R23XV1M6702 - Agalduvity Rohit",
   "R23XV1M6703 - Ananthula Akhil Kumar",
   "R23XV1M6704 - Arudra Thrived Sai",
@@ -178,6 +179,41 @@ function addSubject() {
   }
 }
 
+function saveAttendance() {
+  const day = document.getElementById('day-select').value;
+  const rows = document.querySelectorAll('#attendance-body tr');
+  const data = [];
+  rows.forEach(row => {
+    const student = row.cells[0].textContent;
+    const attendance = [];
+    for (let i = 1; i < row.cells.length; i++) {
+      attendance.push(row.cells[i].firstChild.checked);
+    }
+    data.push({ student, attendance });
+  });
+  const record = { data, timestamp: Date.now() };
+  localStorage.setItem(`attendance_${day}`, JSON.stringify(record));
+}
+
+function loadAttendance() {
+  const day = document.getElementById('day-select').value;
+  const saved = localStorage.getItem(`attendance_${day}`);
+  if (!saved) return;
+
+  const record = JSON.parse(saved);
+  if ((Date.now() - record.timestamp) > EXPIRY_HOURS * 60 * 60 * 1000) {
+    localStorage.removeItem(`attendance_${day}`);
+    return;
+  }
+
+  const rows = document.querySelectorAll('#attendance-body tr');
+  record.data.forEach((item, index) => {
+    for (let i = 0; i < item.attendance.length; i++) {
+      rows[index].cells[i + 1].firstChild.checked = item.attendance[i];
+    }
+  });
+}
+
 function buildTable(subjectCount) {
   const tbody = document.getElementById('attendance-body');
   tbody.innerHTML = '';
@@ -186,15 +222,17 @@ function buildTable(subjectCount) {
     const nameCell = document.createElement('td');
     nameCell.textContent = student;
     row.appendChild(nameCell);
-    for (let j = 1; j <= subjectCount; j++) {
+    for (let j = 0; j < subjectCount; j++) {
       const cell = document.createElement('td');
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.addEventListener('change', saveAttendance);
       cell.appendChild(checkbox);
       row.appendChild(cell);
     }
     tbody.appendChild(row);
   });
+  loadAttendance();
 }
 
 function exportCSV() {
