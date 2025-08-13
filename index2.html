@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Attendance System with Firebase</title>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #eef2f7; }
+  header { background: #2c3e50; color: #fff; padding: 20px; text-align: center; }
+  .container { max-width: 1100px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+  th { background: #34495e; color: white; }
+  input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Attendance Management System</h1>
+</header>
+<div class="container">
+  <label>Select Day: <select id="day-select"></select></label>
+  <table id="attendance-table">
+    <thead><tr id="table-header"></tr></thead>
+    <tbody id="attendance-body"></tbody>
+  </table>
+  <button onclick="saveAttendance()">Save Attendance</button>
+  <button onclick="loadAttendance()">Load Attendance</button>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  import { getFirestore, collection, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+ const firebaseConfig = {
+  apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
+  authDomain: "attendance-dd096.firebaseapp.com",
+  projectId: "attendance-dd096",
+  storageBucket: "attendance-dd096.firebasestorage.app",
+  messagingSenderId: "1064169386680",
+  appId: "1:1064169386680:web:301de8d261c27216aeba4d",
+  measurementId: "G-6XS9BM0852"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const students = ["Student 1", "Student 2", "Student 3"];
+  const subjectsByDay = {
+    Monday: ["AI", "ADA"],
+    Tuesday: ["IDA", "AI"]
+  };
+
+  const daySelect = document.getElementById('day-select');
+  Object.keys(subjectsByDay).forEach(day => {
+    const opt = document.createElement('option');
+    opt.value = day; opt.textContent = day;
+    daySelect.appendChild(opt);
+  });
+
+  function buildTable() {
+    const day = daySelect.value;
+    const subjects = subjectsByDay[day];
+    const headerRow = document.getElementById('table-header');
+    headerRow.innerHTML = '<th>Student</th>' + subjects.map(s => `<th>${s}</th>`).join('');
+    const tbody = document.getElementById('attendance-body');
+    tbody.innerHTML = '';
+    students.forEach(name => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td>` + subjects.map(() => `<td><input type='checkbox'></td>`).join('');
+      tbody.appendChild(tr);
+    });
+  }
+
+  daySelect.addEventListener('change', buildTable);
+  buildTable();
+
+  async function saveAttendance() {
+    const day = daySelect.value;
+    const rows = document.querySelectorAll('#attendance-body tr');
+    const data = [];
+    rows.forEach(row => {
+      const name = row.cells[0].textContent;
+      const attendance = [];
+      for (let i = 1; i < row.cells.length; i++) {
+        attendance.push(row.cells[i].firstChild.checked);
+      }
+      data.push({ name, attendance });
+    });
+    await setDoc(doc(db, "attendance", day), { data });
+    alert('Attendance saved to cloud!');
+  }
+
+  async function loadAttendance() {
+    const day = daySelect.value;
+    const docSnap = await getDoc(doc(db, "attendance", day));
+    if (docSnap.exists()) {
+      const savedData = docSnap.data().data;
+      const rows = document.querySelectorAll('#attendance-body tr');
+      savedData.forEach((studentData, idx) => {
+        studentData.attendance.forEach((checked, subIdx) => {
+          rows[idx].cells[subIdx + 1].firstChild.checked = checked;
+        });
+      });
+      alert('Attendance loaded from cloud!');
+    } else {
+      alert('No data found for this day');
+    }
+  }
+</script>
+</body>
+</html>
