@@ -2,38 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Attendance System with Firebase</title>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
+<title>Attendance System For CSE(DS)</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #eef2f7; }
-  header { background: #2c3e50; color: #fff; padding: 20px; text-align: center; }
-  .container { max-width: 1100px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-  th { background: #34495e; color: white; }
-  input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+  body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
+  header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
+  .container { max-width: 1100px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  h2 { margin-top: 0; color: #2c3e50; }
+  .hidden { display: none; }
+  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+  th { background-color: #34495e; color: white; }
+  tr:nth-child(even) { background-color: #f8f9fb; }
+  tr:hover { background-color: #f1f5f9; }
+  button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; }
+  button:hover { background-color: #2980b9; }
+  .danger-btn { background-color: #e74c3c; }
+  .danger-btn:hover { background-color: #c0392b; }
+  select, input[type="text"], input[type="password"] { padding: 10px; width: 100%; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+  input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Attendance Management System</h1>
+  <h1>Attendance Management System for CSE(DS)</h1>
 </header>
 <div class="container">
-  <label>Select Day: <select id="day-select"></select></label>
+
+<div id="login-section">
+  <h2>Secure Login</h2>
+  <label>Username:<input type="text" id="username" placeholder="Enter username"></label>
+  <label>Password:<input type="password" id="password" placeholder="Enter password"></label>
+  <button onclick="login()">Login</button>
+  <p id="login-message" style="color:red;"></p>
+</div>
+
+<div id="attendance-section" class="hidden">
+  <h2>Mark Attendance</h2>
+  <label>Select Day: <select id="day-select" onchange="loadAttendance()"></select></label>
   <table id="attendance-table">
-    <thead><tr id="table-header"></tr></thead>
+    <thead>
+      <tr id="table-header"></tr>
+    </thead>
     <tbody id="attendance-body"></tbody>
   </table>
   <button onclick="saveAttendance()">Save Attendance</button>
   <button onclick="loadAttendance()">Load Attendance</button>
+  <button onclick="logout()" class="danger-btn">Logout</button>
 </div>
+
+</div>
+
 <script type="module">
-   // Import Firebase SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-  // Your Firebase configuration
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
@@ -44,73 +67,104 @@
     measurementId: "G-6XS9BM0852"
   };
 
-
+  // Init Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const students = ["Student 1", "Student 2", "Student 3"];
+  const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
+
+  const students = [
+    "R23XV1M6701 - Addanki Harshitha",
+    "R23XV1M6702 - Agalduvity Rohit",
+    "R23XV1M6703 - Ananthula Akhil Kumar",
+    "R23XV1M6704 - Arudra Thrived Sai",
+    "R23XV1M6705 - Asmita Samayam",
+    // ... include all students from your PDF here
+  ];
+
   const subjectsByDay = {
-    Monday: ["AI", "ADA"],
-    Tuesday: ["IDA", "AI"]
+    'Monday': ['AI', 'ADA', 'CN-Lab', 'SMD'],
+    'Tuesday': ['IDA', 'AI', 'ADA', 'ACS-Lab'],
+    'Wednesday': ['IDA', 'Assignment', 'CN', 'SMD', 'KOFKA'],
+    'Thursday': ['IDA', 'R-Lab', 'CN', 'IPR'],
+    'Friday': ['AI', 'CN-Lab Assignment', 'IDA', 'Hackathon'],
+    'Saturday': ['Aptitude Class']
   };
 
-  const daySelect = document.getElementById('day-select');
-  Object.keys(subjectsByDay).forEach(day => {
-    const opt = document.createElement('option');
-    opt.value = day; opt.textContent = day;
-    daySelect.appendChild(opt);
-  });
+  function login() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('attendance-section').classList.remove('hidden');
+      populateDayDropdown();
+      buildTable(subjectsByDay['Monday']);
+    } else {
+      document.getElementById('login-message').textContent = '❌ Invalid username or password';
+    }
+  }
 
-  function buildTable() {
-    const day = daySelect.value;
-    const subjects = subjectsByDay[day];
-    const headerRow = document.getElementById('table-header');
-    headerRow.innerHTML = '<th>Student</th>' + subjects.map(s => `<th>${s}</th>`).join('');
-    const tbody = document.getElementById('attendance-body');
-    tbody.innerHTML = '';
-    students.forEach(name => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td>` + subjects.map(() => `<td><input type='checkbox'></td>`).join('');
-      tbody.appendChild(tr);
+  function logout() {
+    document.getElementById('attendance-section').classList.add('hidden');
+    document.getElementById('login-section').classList.remove('hidden');
+  }
+
+  function populateDayDropdown() {
+    const select = document.getElementById('day-select');
+    select.innerHTML = '';
+    Object.keys(subjectsByDay).forEach(day => {
+      const option = document.createElement('option');
+      option.value = day;
+      option.textContent = day;
+      select.appendChild(option);
     });
   }
 
-  daySelect.addEventListener('change', buildTable);
-  buildTable();
+  function buildTable(subjects) {
+    const headerRow = document.getElementById('table-header');
+    headerRow.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
+    const tbody = document.getElementById('attendance-body');
+    tbody.innerHTML = '';
+    students.forEach(student => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${student}</td>` + subjects.map(() => `<td><input type="checkbox"></td>`).join('');
+      tbody.appendChild(row);
+    });
+  }
 
   async function saveAttendance() {
-    const day = daySelect.value;
+    const day = document.getElementById('day-select').value;
     const rows = document.querySelectorAll('#attendance-body tr');
-    const data = [];
+    const subjects = subjectsByDay[day];
+    const data = {};
     rows.forEach(row => {
-      const name = row.cells[0].textContent;
-      const attendance = [];
-      for (let i = 1; i < row.cells.length; i++) {
-        attendance.push(row.cells[i].firstChild.checked);
+      const student = row.cells[0].textContent;
+      data[student] = [];
+      for (let i = 1; i <= subjects.length; i++) {
+        data[student].push(row.cells[i].firstChild.checked);
       }
-      data.push({ name, attendance });
     });
-    await setDoc(doc(db, "attendance", day), { data });
-    alert('Attendance saved to cloud!');
+    await setDoc(doc(db, "attendance", day), data);
+    alert("✅ Attendance saved to Firestore!");
   }
 
   async function loadAttendance() {
-    const day = daySelect.value;
+    const day = document.getElementById('day-select').value;
+    buildTable(subjectsByDay[day]);
     const docSnap = await getDoc(doc(db, "attendance", day));
     if (docSnap.exists()) {
-      const savedData = docSnap.data().data;
+      const data = docSnap.data();
       const rows = document.querySelectorAll('#attendance-body tr');
-      savedData.forEach((studentData, idx) => {
-        studentData.attendance.forEach((checked, subIdx) => {
-          rows[idx].cells[subIdx + 1].firstChild.checked = checked;
-        });
+      rows.forEach(row => {
+        const student = row.cells[0].textContent;
+        if (data[student]) {
+          data[student].forEach((present, idx) => {
+            row.cells[idx + 1].firstChild.checked = present;
+          });
+        }
       });
-      alert('Attendance loaded from cloud!');
-    } else {
-      alert('No data found for this day');
     }
   }
 </script>
 </body>
 </html>
-
