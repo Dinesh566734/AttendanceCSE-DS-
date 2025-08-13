@@ -19,7 +19,8 @@
   .danger-btn { background-color: #e74c3c; }
   .danger-btn:hover { background-color: #c0392b; }
   select, input[type="text"], input[type="password"] { padding: 10px; width: 100%; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
-  input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+  input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+  .diag { font-size: 12px; color: #555; }
 </style>
 </head>
 <body>
@@ -34,6 +35,7 @@
   <label>Password:<input type="password" id="password" placeholder="Enter password"></label>
   <button id="loginBtn">Login</button>
   <p id="login-message" style="color:red;"></p>
+  <div id="diag" class="diag"></div>
 </div>
 
 <div id="attendance-section" class="hidden">
@@ -53,9 +55,11 @@
 </div>
 
 <script type="module">
+  // Firebase v9 modular SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
+  // --- Firebase config ---
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
@@ -66,9 +70,11 @@
     measurementId: "G-6XS9BM0852"
   };
 
+  // Init Firebase/Firestore
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // --- App data ---
   const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
 
   const students = [
@@ -88,7 +94,11 @@
     'Saturday': ['Aptitude Class']
   };
 
-  document.getElementById('loginBtn').addEventListener('click', () => {
+  // --- UI wiring ---
+  const loginBtn = document.getElementById('loginBtn');
+  loginBtn.addEventListener('click', onLogin);
+
+  function onLogin() {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
     if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
@@ -100,7 +110,7 @@
     } else {
       document.getElementById('login-message').textContent = '❌ Invalid username or password';
     }
-  });
+  }
 
   function logout() {
     document.getElementById('attendance-section').classList.add('hidden');
@@ -142,27 +152,45 @@
         data[student].push(row.cells[i].firstChild.checked);
       }
     });
-    await setDoc(doc(db, "attendance", day), data);
-    alert("✅ Attendance saved to Firestore!");
+    await setDoc(doc(db, 'attendance', day), data);
+    alert('✅ Attendance saved to Firestore!');
   }
 
   async function loadAttendance() {
     const day = document.getElementById('day-select').value;
     buildTable(subjectsByDay[day]);
-    const docSnap = await getDoc(doc(db, "attendance", day));
-    if (docSnap.exists()) {
-      const data = docSnap.data();
+    const snap = await getDoc(doc(db, 'attendance', day));
+    if (snap.exists()) {
+      const data = snap.data();
       const rows = document.querySelectorAll('#attendance-body tr');
       rows.forEach(row => {
         const student = row.cells[0].textContent;
         if (data[student]) {
           data[student].forEach((present, idx) => {
-            row.cells[idx + 1].firstChild.checked = present;
+            row.cells[idx + 1].firstChild.checked = !!present;
           });
         }
       });
     }
   }
+
+  // --- Expose functions to global for inline handlers ---
+  // (Because this script uses type="module", functions are scoped to the module by default.)
+  window.saveAttendance = saveAttendance;
+  window.loadAttendance  = loadAttendance;
+  window.logout          = logout;
+
+  // --- Minimal diagnostics (test cases) ---
+  (function runDiagnostics(){
+    const log = [];
+    log.push(['global saveAttendance', typeof window.saveAttendance === 'function']);
+    log.push(['global loadAttendance', typeof window.loadAttendance === 'function']);
+    log.push(['global logout', typeof window.logout === 'function']);
+    log.push(['Firestore initialized', !!db]);
+    document.getElementById('diag').textContent =
+      'Diagnostics → ' + log.map(([k,v]) => `${k}: ${v ? 'OK' : 'FAIL'}`).join(' | ');
+    console.table(log.map(([k,v]) => ({ check: k, ok: !!v })));
+  })();
 </script>
 </body>
 </html>
