@@ -39,6 +39,8 @@
 <div id="attendance-section" class="hidden">
   <h2>Mark Attendance</h2>
   <label>Select Day: <select id="day-select" onchange="updateSubjects()"></select></label>
+  <input type="text" id="new-subject" placeholder="Enter new subject name">
+  <button onclick="addSubject()">Add Subject</button>
   <table id="attendance-table">
     <thead>
       <tr id="table-header"></tr>
@@ -52,6 +54,70 @@
 
 <script>
 const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
+
+const students = [
+  "R23XV1M6701 - Addanki Harshitha",
+  "R23XV1M6702 - Agalduvity Rohit",
+  "R23XV1M6703 - Ananthula Akhil Kumar",
+  "R23XV1M6704 - Arudra Thrived Sai",
+  "R23XV1M6705 - Asmita Samayam",
+  "R23XV1M6706 - Bolladi Yashwanth Reddy",
+  "R23XV1M6707 - Chanda Pranav",
+  "R23XV1M6708 - Chiguru Varun",
+  "R23XV1M6709 - Duddu Harshavardhan",
+  "R23XV1M6710 - Gadde Yaksha",
+  "R23XV1M6711 - Ganji Prashanth",
+  "R23XV1M6712 - Gogineni Ramya",
+  "R23XV1M6713 - Goli Tarun",
+  "R23XV1M6714 - Goli Vamshi",
+  "R23XV1M6715 - Gottapu Manikanth",
+  "R23XV1M6716 - Guduru Vamshi Krishna",
+  "R23XV1M6717 - Gugulothu Harsha",
+  "R23XV1M6718 - Kacharla Sravani",
+  "R23XV1M6719 - Kadavakollu Jagadeesh",
+  "R23XV1M6720 - Kalidindi Mohan",
+  "R23XV1M6721 - Kandagatla Harsha",
+  "R23XV1M6722 - Kandala Bharath",
+  "R23XV1M6723 - Kanduri Haritha",
+  "R23XV1M6724 - Kanteti Harshini",
+  "R23XV1M6725 - Kattamuri Vamshi",
+  "R23XV1M6726 - Kaveti Manideep",
+  "R23XV1M6727 - Kola Harsha Vardhan",
+  "R23XV1M6728 - Komuravelly Akhil",
+  "R23XV1M6729 - Kosuru Srujan",
+  "R23XV1M6730 - Kotla Kalyan",
+  "R23XV1M6731 - Kotla Sandeep",
+  "R23XV1M6732 - Kovvuri Rakesh",
+  "R23XV1M6733 - Kudumula Abhishek",
+  "R23XV1M6734 - Kummari Karthik",
+  "R23XV1M6735 - Kuncha Prashanth",
+  "R23XV1M6736 - Kurra Bhuvanesh",
+  "R23XV1M6737 - Lankapalli Surya Teja",
+  "R23XV1M6738 - Maddikunta Surya",
+  "R23XV1M6739 - Madireddy Santhosh",
+  "R23XV1M6740 - Mallampalli Sandeep",
+  "R23XV1M6741 - Mallela Harsha Vardhan",
+  "R23XV1M6742 - Mandapaka Prashanth",
+  "R23XV1M6743 - Manda Vamshi Krishna",
+  "R23XV1M6744 - Mandula Harsha",
+  "R23XV1M6745 - Mavilla Manikanta",
+  "R23XV1M6746 - Medapati Harshini",
+  "R23XV1M6747 - Mekala Harsha",
+  "R23XV1M6748 - Merugu Sandeep",
+  "R23XV1M6749 - Metta Ganesh",
+  "R23XV1M6750 - Mittapally Harsha",
+  "R23XV1M6751 - Modem Prashanth",
+  "R23XV1M6752 - Mogulla Vamshi",
+  "R23XV1M6753 - Mothukuri Harsha",
+  "R23XV1M6754 - Mudiraj Harsha Vardhan",
+  "R23XV1M6755 - Nagam Krishna",
+  "R23XV1M6756 - Nallagonda Rakesh",
+  "R23XV1M6757 - Narala Vamshi",
+  "R23XV1M6758 - Narumanchi Harsha",
+  "R23XV1M6759 - Natti Harsha",
+  "NR23XV1M6760 - Venkatesh Tadepalli"
+];
+
 const subjectsByDay = {
   'Monday': ['AI', 'ADA', 'CN-Lab', 'SMD'],
   'Tuesday': ['IDA', 'AI', 'ADA', 'ACS-Lab'],
@@ -100,13 +166,25 @@ function updateSubjects() {
   buildTable(subjects.length);
 }
 
+function addSubject() {
+  const newSubject = document.getElementById('new-subject').value.trim();
+  const day = document.getElementById('day-select').value;
+  if (newSubject && day) {
+    subjectsByDay[day].push(newSubject);
+    document.getElementById('new-subject').value = '';
+    updateSubjects();
+  } else {
+    alert('Please enter a subject name');
+  }
+}
+
 function buildTable(subjectCount) {
   const tbody = document.getElementById('attendance-body');
   tbody.innerHTML = '';
-  for (let i = 1; i <= 60; i++) {
+  students.forEach(student => {
     const row = document.createElement('tr');
     const nameCell = document.createElement('td');
-    nameCell.textContent = `Student ${i}`;
+    nameCell.textContent = student;
     row.appendChild(nameCell);
     for (let j = 1; j <= subjectCount; j++) {
       const cell = document.createElement('td');
@@ -116,7 +194,7 @@ function buildTable(subjectCount) {
       row.appendChild(cell);
     }
     tbody.appendChild(row);
-  }
+  });
 }
 
 function exportCSV() {
