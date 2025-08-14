@@ -1,72 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Attendance System For CSE(DS)</title>
-<style>
-  body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
-  header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
-  .container { max-width: 1100px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-  h2 { margin-top: 0; color: #2c3e50; }
-  .hidden { display: none; }
-  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-  th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-  th { background-color: #34495e; color: white; }
-  tr:nth-child(even) { background-color: #f8f9fb; }
-  tr:hover { background-color: #f1f5f9; }
-  button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; }
-  button:hover { background-color: #2980b9; }
-  .danger-btn { background-color: #e74c3c; }
-  .danger-btn:hover { background-color: #c0392b; }
-  select, input[type="text"], input[type="password"], input[type="date"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
-  input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance System For CSE(DS)</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
+    header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
+    .container { max-width: 1100px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #2c3e50; }
+    .hidden { display: none; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #34495e; color: white; }
+    tr:nth-child(even) { background-color: #f8f9fb; }
+    tr:hover { background-color: #f1f5f9; }
+    button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; }
+    button:hover { background-color: #2980b9; }
+    .danger-btn { background-color: #e74c3c; }
+    .danger-btn:hover { background-color: #c0392b; }
+    select, input[type="text"], input[type="password"], input[type="date"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .muted { color:#6b7280; font-size: 0.95rem; }
+    .notice { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:10px; border-radius:6px; margin:10px 0; }
+    .success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; padding:10px; border-radius:6px; margin:10px 0; }
+    .error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px; border-radius:6px; margin:10px 0; }
+    small { display:block; color:#6b7280 }
+  </style>
 </head>
 <body>
 <header>
-  <h1>Attendance Management System for CSE(DS)</h1>
+  <h1>Attendance System for CSE(DS)</h1>
 </header>
 <div class="container">
 
-<div id="login-section">
-  <h2>Secure Login</h2>
-  <label>Username:<input type="text" id="username" placeholder="Enter username"></label>
-  <label>Password:<input type="password" id="password" placeholder="Enter password"></label>
-  <button onclick="login()">Login</button>
-  <p id="login-message" style="color:red;"></p>
-</div>
+  <!-- LOGIN -->
+  <div id="login-section">
+    <h2>Secure Login</h2>
+    <p class="muted">Sign in with the email that was added to <strong>Firebase Authentication</strong>.</p>
+    <div class="row">
+      <label style="min-width:280px">Email:<br/><input type="text" id="username" placeholder="Enter email" autocomplete="username" /></label>
+      <label style="min-width:280px">Password:<br/><input type="password" id="password" placeholder="Enter password" autocomplete="current-password" /></label>
+    </div>
+    <div class="row">
+      <button id="login-btn">Login</button>
+      <button id="forgot-btn" class="muted">Forgot password</button>
+    </div>
 
-<div id="attendance-section" class="hidden">
-  <h2>Mark Attendance</h2>
-  <h2 style="color:red;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h2>
-  
-  <label>Select Day: <select id="day-select" onchange="loadAttendance()"></select></label>
-  <label>Date: <input type="date" id="date-select"></label>
-  <label>Saved Records: <select required id="saved-dates" onchange="loadFromHistory()"></select></label>
+    <div id="login-feedback" style="min-height:1.25rem; margin-top:8px"></div>
 
-  <!-- Add class input -->
-  <div>
-    <input type="text" id="new-class-name" placeholder="Enter new class/subject">
-    <button onclick="addClassColumn()">Add Class</button>
+    <div id="login-troubleshoot" class="notice" style="display:none;">
+      <strong>Troubleshooting tips</strong>
+      <ul>
+        <li>Make sure you are using the <em>exact</em> email created in Authentication.</li>
+        <li>If you get <code>auth/user-not-found</code>, the email is not registered (add user in Firebase Console → Authentication).</li>
+        <li>If you get <code>auth/wrong-password</code>, use the <em>Forgot password</em> button to reset it.</li>
+        <li>If you still see errors, check the browser console and the Firebase Authentication &amp; Firestore rules.</li>
+      </ul>
+    </div>
   </div>
 
-  <table id="attendance-table">
-    <thead>
-      <tr id="table-header"></tr>
-    </thead>
-    <tbody id="attendance-body"></tbody>
-  </table>
-  <button onclick="saveAttendance()">Save Attendance</button>
-  <button onclick="exportCSV()">Export as CSV</button>
-  <button onclick="logout()" class="danger-btn">Logout</button>
-</div>
+  <!-- APP -->
+  <div id="attendance-section" class="hidden">
+    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin: 0;">Mark Attendance</h2>
+      
+    </div>
+    <h3 style="color:red; margin-top:-6px;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h3>
+
+    <div id="user-role-info" class="muted" style="margin-bottom:10px"></div>
+    <div id="missing-role" class="error" style="display:none;"></div>
+
+    <div class="row">
+      <label>Select Day: <select id="day-select"></select></label>
+      <label>Date: <input type="date" id="date-select"></label>
+      <label>Saved Records: <select required id="saved-dates"></select></label>
+      <button id="logout-btn" class="danger-btn">Logout</button>
+    </div>
+
+    <!-- Add class input (hidden for viewers) -->
+    <div id="add-class-section" class="row">
+      <input type="text" id="new-class-name" placeholder="Enter new class/subject">
+      <button id="add-class-btn">Add Class</button>
+    </div>
+
+    <table id="attendance-table">
+      <thead>
+        <tr id="table-header"></tr>
+      </thead>
+      <tbody id="attendance-body"></tbody>
+    </table>
+
+    <div id="teacher-buttons" class="row">
+      <button id="save-btn">Save Attendance</button>
+      <button id="export-btn">Export as CSV</button>
+     
+    </div>
+  </div>
 
 </div>
 
 <script type="module">
+  /*************************************
+   * Firebase SDKs (v9 modular)
+   *************************************/
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
@@ -79,9 +121,11 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  const USER_CREDENTIALS = { username: 'teacher', password: 'pass123' };
-
+  /*************************************
+   * Data
+   *************************************/
   const students = [
     "R23XV1M6701 - Addanki Harshitha",
     "R23XV1M6702 - Agalduvity Rohit",
@@ -154,158 +198,379 @@
     'Saturday': ['Aptitude Class']
   };
 
-  window.login = async function () {
-    const user = document.getElementById('username').value.trim();
-    const pass = document.getElementById('password').value.trim();
-    if (user === USER_CREDENTIALS.username && pass === USER_CREDENTIALS.password) {
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('attendance-section').classList.remove('hidden');
-      populateDayDropdown();
-      document.getElementById('date-select').value = new Date().toISOString().split('T')[0];
-      buildTable(subjectsByDay['Monday']);
-      await loadSavedDates();
+  /*************************************
+   * DOM helpers
+   *************************************/
+  const $ = (id) => document.getElementById(id);
+
+  const loginSection = $("login-section");
+  const attendanceSection = $("attendance-section");
+  const loginFeedback = $("login-feedback");
+  const loginTroubleshoot = $("login-troubleshoot");
+  const daySelect = $("day-select");
+  const dateSelect = $("date-select");
+  const savedDates = $("saved-dates");
+  const addClassSection = $("add-class-section");
+  const teacherButtons = $("teacher-buttons");
+  const tableHeader = $("table-header");
+  const tbody = $("attendance-body");
+  const loginBtn = $("login-btn");
+  const forgotBtn = $("forgot-btn");
+  const logoutBtn = $("logout-btn");
+  const addClassBtn = $("add-class-btn");
+  const saveBtn = $("save-btn");
+  const exportBtn = $("export-btn");
+  const userRoleInfo = $("user-role-info");
+  const missingRole = $("missing-role");
+
+  let currentRole = null; // 'teacher' | 'viewer'
+
+  /*************************************
+   * Auth state handling
+   *************************************/
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // Fetch role from Firestore: users/{uid} => { role: 'teacher' | 'viewer' }
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) {
+          // Show guidance to create a role document (UID displayed so admin can add it)
+          currentRole = null;
+          userRoleInfo.textContent = `Signed in as: ${user.email} (UID: ${user.uid})`;
+          missingRole.style.display = '';
+          missingRole.innerHTML = `<strong>No role assigned</strong><br/>Your account exists in Authentication but there is no Firestore profile (users/${user.uid}).<br/>
+            Ask the project admin to create a document at <code>users/${user.uid}</code> with fields <code>email</code> and <code>role</code> ("teacher" or "viewer").
+            <br/><br/><small>If you are an admin and want to create it from this browser, try the button below. This might fail if your Firestore security rules prevent client writes.</small>
+            <div style="margin-top:8px">
+              <select id="role-to-create"><option value="viewer">viewer</option><option value="teacher">teacher</option></select>
+              <button id="create-role-doc">Create role doc (attempt)</button>
+            </div>`;
+
+          document.getElementById('create-role-doc').addEventListener('click', async () => {
+            const chosen = document.getElementById('role-to-create').value;
+            try {
+              await setDoc(doc(db, 'users', user.uid), { email: user.email, role: chosen });
+              missingRole.className = 'success';
+              missingRole.textContent = `Role document created as '${chosen}'. Reloading...`;
+              setTimeout(() => location.reload(), 800);
+            } catch (err) {
+              console.error(err);
+              missingRole.className = 'error';
+              missingRole.innerHTML = `Failed to create role doc: <code>${err.code || err.message}</code><br/>Add the document manually in the Firebase Console.`;
+            }
+          });
+
+          showApp(); // still show app in read-only/limited state
+          return;
+        }
+
+        currentRole = userSnap.data().role;
+        userRoleInfo.textContent = `Signed in as: ${user.email} — role: ${currentRole}`;
+        missingRole.style.display = 'none';
+        loginFeedback.innerHTML = '';
+        showApp();
+      } catch (err) {
+        console.error('Error fetching user role:', err);
+        loginFeedback.innerHTML = `<div class="error">Failed to fetch role: ${err.message || err.code}</div>`;
+        showLogin();
+      }
     } else {
-      document.getElementById('login-message').textContent = '❌ Invalid username or password';
+      // signed out
+      currentRole = null;
+      userRoleInfo.textContent = '';
+      missingRole.style.display = 'none';
+      showLogin();
     }
+  });
+
+  function showLogin() {
+    loginSection.classList.remove('hidden');
+    attendanceSection.classList.add('hidden');
+    loginTroubleshoot.style.display = 'none';
   }
 
-  window.logout = function () {
-    document.getElementById('attendance-section').classList.add('hidden');
-    document.getElementById('login-section').classList.remove('hidden');
-  }
+ function showApp() {
+  loginSection.classList.add('hidden');
+  attendanceSection.classList.remove('hidden');
 
-  function populateDayDropdown() {
-    const select = document.getElementById('day-select');
-    select.innerHTML = '';
-    Object.keys(subjectsByDay).forEach(day => {
-      const option = document.createElement('option');
-      option.value = day;
-      option.textContent = day;
-      select.appendChild(option);
-    });
-  }
+  populateDayDropdown();
+  dateSelect.value = new Date().toISOString().split('T')[0];
+  buildTable(subjectsByDay['Monday']);
+  loadSavedDates();
 
-  function buildTable(subjects, existingData = {}) {
-    const headerRow = document.getElementById('table-header');
-    headerRow.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
-    const tbody = document.getElementById('attendance-body');
-    tbody.innerHTML = '';
-    students.forEach(student => {
-      const row = document.createElement('tr');
-      let rowHTML = `<td>${student}</td>`;
-      subjects.forEach((sub, idx) => {
-        const checked = existingData[student]?.[idx] ? 'checked' : '';
-        rowHTML += `<td><input type="checkbox" ${checked}></td>`;
-      });
-      row.innerHTML = rowHTML;
-      tbody.appendChild(row);
-    });
+  if (currentRole === 'viewer') {
+    addClassSection.style.display = 'none';
+    teacherButtons.style.display = 'none';
+    daySelect.disabled = true;
+    dateSelect.disabled = true;
+  } else {
+    addClassSection.style.display = '';
+    teacherButtons.style.display = '';
+    daySelect.disabled = false;
+    dateSelect.disabled = false;
   }
+}
 
-  window.addClassColumn = function () {
-    const newClass = document.getElementById('new-class-name').value.trim();
-    if (!newClass) {
-      alert("❌ Please enter a class name");
+  /*************************************
+   * UI actions
+   *************************************/
+  loginBtn.addEventListener('click', async () => {
+    const email = (document.getElementById('username').value || '').trim();
+    const pass = (document.getElementById('password').value || '').trim();
+
+    // Basic client-side validation
+    if (!email || !pass) {
+      loginTroubleshoot.style.display = '';
+      loginFeedback.innerHTML = `<div class="error">Please enter both email and password.</div>`;
       return;
     }
-    const day = document.getElementById('day-select').value;
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      loginFeedback.innerHTML = `<div class="error">Please enter a valid email address.</div>`;
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      loginFeedback.innerHTML = `<div class="success">Signed in successfully.</div>`;
+      loginTroubleshoot.style.display = 'none';
+    } catch (e) {
+      console.error('firebase auth error:', e);
+      loginTroubleshoot.style.display = '';
+
+      // Provide actionable messages based on the error code
+      const code = e.code || e.message || 'unknown';
+      let message = '';
+      switch (code) {
+        case 'auth/invalid-email':
+          message = 'Invalid email format. Please check and try again.'; break;
+        case 'auth/user-disabled':
+          message = 'This user account has been disabled.'; break;
+        case 'auth/user-not-found':
+          message = 'No user found for this email. Make sure the email is registered in Firebase Authentication.'; break;
+        case 'auth/wrong-password':
+        case 'auth/invalid-login-credentials':
+          message = 'Wrong password. Try resetting your password using the "Forgot password" button.'; break;
+        case 'auth/too-many-requests':
+          message = 'Too many failed attempts. Try again later or reset your password.'; break;
+        default:
+          // sometimes SDK returns messages instead of codes
+          message = e.message || String(e);
+      }
+
+      loginFeedback.innerHTML = `<div class="error"><strong>Sign-in failed</strong>: ${message}<br/><small>Error code: ${code}</small></div>`;
+    }
+  });
+
+  forgotBtn.addEventListener('click', async () => {
+    const email = (document.getElementById('username').value || '').trim();
+    if (!email) {
+      loginFeedback.innerHTML = `<div class="notice">Enter your email in the Email field and click "Forgot password" to receive a reset link.</div>`;
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      loginFeedback.innerHTML = `<div class="success">Password reset email sent to ${email}. Check your inbox (and spam).</div>`;
+    } catch (e) {
+      console.error('password reset error', e);
+      loginFeedback.innerHTML = `<div class="error">Failed to send reset email: ${e.code || e.message}</div>`;
+    }
+  });
+
+  // FIXED: Using the correct ID 'logout-btn' instead of 'logoutBtn'
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      tbody.innerHTML = '';
+      tableHeader.innerHTML = '';
+      savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
+      currentRole = null;
+      userRoleInfo.textContent = '';
+      missingRole.style.display = 'none';
+      alert(' You have been logged out.');
+    } catch (e) {
+      console.error('Logout failed:', e);
+      alert(' Failed to log out. Please try again.');
+    }
+  });
+
+  daySelect.addEventListener('change', loadAttendance);
+  dateSelect.addEventListener('change', loadAttendance);
+
+  addClassBtn.addEventListener('click', () => {
+    if (currentRole === 'viewer') return; // hard stop
+    const input = document.getElementById('new-class-name');
+    const newClass = (input.value || '').trim();
+    if (!newClass) { alert(' Please enter a class name'); return; }
+
+    const day = daySelect.value;
     const subjects = subjectsByDay[day];
-    if (subjects.includes(newClass)) {
-      alert("⚠ This class already exists for today.");
-      return;
-    }
+
+    if (subjects.includes(newClass)) { alert('⚠ This class already exists for today.'); return; }
+
+    // capture existing state
     const existingData = {};
-    const rows = document.querySelectorAll('#attendance-body tr');
-    rows.forEach(row => {
+    document.querySelectorAll('#attendance-body tr').forEach(row => {
       const student = row.cells[0].textContent;
       existingData[student] = [];
       for (let i = 1; i < row.cells.length; i++) {
         existingData[student].push(row.cells[i].firstChild.checked);
       }
     });
+
     subjects.push(newClass);
     buildTable(subjects, existingData);
-    document.getElementById('new-class-name').value = '';
-  };
+    input.value = '';
+  });
 
-  window.saveAttendance = async function () {
-    const day = document.getElementById('day-select').value;
-    const date = document.getElementById('date-select').value;
+  saveBtn.addEventListener('click', saveAttendance);
+  exportBtn.addEventListener('click', exportCSV);
+
+  /*************************************
+   * Core features
+   *************************************/
+  function populateDayDropdown() {
+    daySelect.innerHTML = '';
+    Object.keys(subjectsByDay).forEach(day => {
+      const option = document.createElement('option');
+      option.value = day;
+      option.textContent = day;
+      daySelect.appendChild(option);
+    });
+  }
+
+  function buildTable(subjects, existingData = {}) {
+    tableHeader.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
+    tbody.innerHTML = '';
+
+    students.forEach(student => {
+      const row = document.createElement('tr');
+      let rowHTML = `<td>${student}</td>`;
+      subjects.forEach((sub, idx) => {
+        const checked = existingData[student]?.[idx] ? 'checked' : '';
+        const disabled = currentRole === 'viewer' ? 'disabled' : '';
+        rowHTML += `<td><input type="checkbox" ${checked} ${disabled}></td>`;
+      });
+      row.innerHTML = rowHTML;
+      tbody.appendChild(row);
+    });
+  }
+
+  async function saveAttendance() {
+    if (currentRole !== 'teacher') { alert('Only teachers can save.'); return; }
+
+    const day = daySelect.value;
+    const date = dateSelect.value;
+    if (!date) { alert(' Please choose a date'); return; }
+
     const docId = `${day}_${date}`;
-    const rows = document.querySelectorAll('#attendance-body tr');
     const subjects = subjectsByDay[day];
+
     const data = {};
-    rows.forEach(row => {
+    document.querySelectorAll('#attendance-body tr').forEach(row => {
       const student = row.cells[0].textContent;
       data[student] = [];
       for (let i = 1; i <= subjects.length; i++) {
         data[student].push(row.cells[i].firstChild.checked);
       }
     });
-    await setDoc(doc(db, "attendance", docId), { subjects, data });
-    alert(`✅ Attendance saved for ${day} (${date})`);
-    await loadSavedDates();
+
+    try {
+      await setDoc(doc(db, 'attendance', docId), { subjects, data, day, date, updatedBy: auth.currentUser?.uid || null, updatedAt: Date.now() });
+      alert(` Attendance saved for ${day} (${date})`);
+      await loadSavedDates();
+    } catch (e) {
+      console.error(e);
+      alert(' Failed to save (check Firestore rules).');
+    }
   }
 
-  window.loadAttendance = async function () {
-    const day = document.getElementById('day-select').value;
-    const date = document.getElementById('date-select').value;
+  async function loadAttendance() {
+    const day = daySelect.value;
+    const date = dateSelect.value;
     const docId = `${day}_${date}`;
-    const docSnap = await getDoc(doc(db, "attendance", docId));
-    if (docSnap.exists()) {
-      const saved = docSnap.data();
-      subjectsByDay[day] = saved.subjects || subjectsByDay[day];
-      buildTable(subjectsByDay[day], saved.data);
-    } else {
-      buildTable(subjectsByDay[day]);
+
+    try {
+      const snap = await getDoc(doc(db, 'attendance', docId));
+      if (snap.exists()) {
+        const saved = snap.data();
+        // If subjects were customized for that day, use them
+        subjectsByDay[day] = Array.isArray(saved.subjects) && saved.subjects.length ? saved.subjects : subjectsByDay[day];
+        buildTable(subjectsByDay[day], saved.data);
+      } else {
+        buildTable(subjectsByDay[day]);
+      }
+    } catch (e) {
+      console.error(e);
+      alert(' Failed to load attendance (check Firestore rules).');
     }
   }
 
   async function loadSavedDates() {
-    const select = document.getElementById('saved-dates');
-    select.innerHTML = '<option value="">-- Select Saved Record --</option>';
-    const querySnapshot = await getDocs(collection(db, "attendance"));
-    querySnapshot.forEach(docSnap => {
-      const option = document.createElement('option');
-      option.value = docSnap.id;
-      option.textContent = docSnap.id;
-      select.appendChild(option);
-    });
+    savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
+    try {
+      const querySnapshot = await getDocs(collection(db, 'attendance'));
+      querySnapshot.forEach(docSnap => {
+        const option = document.createElement('option');
+        option.value = docSnap.id;
+        option.textContent = docSnap.id;
+        savedDates.appendChild(option);
+      });
+    } catch (e) {
+      console.error(e);
+      alert(' Failed to load saved records (check Firestore rules).');
+    }
   }
 
-  window.loadFromHistory = function () {
-    const recordId = document.getElementById('saved-dates').value;
+  savedDates.addEventListener('change', () => {
+    const recordId = savedDates.value;
     if (!recordId) return;
     const [day, date] = recordId.split('_');
-    document.getElementById('day-select').value = day;
-    document.getElementById('date-select').value = date;
+    daySelect.value = day;
+    dateSelect.value = date;
     loadAttendance();
+  });
+
+  async function exportCSV() {
+    if (currentRole !== 'teacher') { alert('Only teachers can export.'); return; }
+
+    const day = daySelect.value;
+    const date = dateSelect.value;
+    const docId = `${day}_${date}`;
+
+    try {
+      const docSnap = await getDoc(doc(db, 'attendance', docId));
+      if (!docSnap.exists()) {
+        alert(' No data found for this date');
+        return;
+      }
+
+      const saved = docSnap.data();
+      let csvContent = `Date,${date},Day,${day}\n`;
+      csvContent += 'Student,' + (saved.subjects || []).join(',') + '\n';
+      Object.keys(saved.data || {}).forEach(student => {
+        csvContent += student + ',' + (saved.data[student] || []).map(p => p ? 'Present' : 'Absent').join(',') + '\n';
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Attendance_${day}_${date}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert(' Failed to export (check Firestore rules).');
+    }
   }
 
-  window.exportCSV = async function () {
-    const day = document.getElementById('day-select').value;
-    const date = document.getElementById('date-select').value;
-    const docId = `${day}_${date}`;
-    const docSnap = await getDoc(doc(db, "attendance", docId));
-    if (!docSnap.exists()) {
-      alert("❌ No data found for this date");
-      return;
-    }
-    const saved = docSnap.data();
-    let csvContent = `Date,${date},Day,${day}\n`;
-    csvContent += 'Student,' + saved.subjects.join(',') + '\n';
-    Object.keys(saved.data).forEach(student => {
-      csvContent += student + ',' + saved.data[student].map(p => p ? 'Present' : 'Absent').join(',') + '\n';
-    });
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Attendance_${day}_${date}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
 </script>
+
 </body>
 </html>
