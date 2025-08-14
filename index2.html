@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Attendance System For CSE(DS) — Secure (Debuggable)</title>
+  <title>Attendance System For CSE(DS)</title>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
     header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
@@ -31,7 +31,7 @@
 </head>
 <body>
 <header>
-  <h1>Attendance Management System for CSE(DS)</h1>
+  <h1>Attendance System for CSE(DS)</h1>
 </header>
 <div class="container">
 
@@ -44,9 +44,11 @@
       <label style="min-width:280px">Password:<br/><input type="password" id="password" placeholder="Enter password" autocomplete="current-password" /></label>
     </div>
     <div class="row">
+  <div class="g-recaptcha" data-sitekey="6Lf3HqYrAAAAAAMj597dHly9qhUC5LF-BKdemUnN"></div>
+</div>
+    <div class="row">
       <button id="login-btn">Login</button>
       <button id="forgot-btn" class="muted">Forgot password</button>
-      <button id="logout-btn" class="danger-btn hidden">Logout</button>
     </div>
 
     <div id="login-feedback" style="min-height:1.25rem; margin-top:8px"></div>
@@ -64,7 +66,10 @@
 
   <!-- APP -->
   <div id="attendance-section" class="hidden">
-    <h2>Mark Attendance</h2>
+    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin: 0;">Mark Attendance</h2>
+      
+    </div>
     <h3 style="color:red; margin-top:-6px;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h3>
 
     <div id="user-role-info" class="muted" style="margin-bottom:10px"></div>
@@ -74,6 +79,7 @@
       <label>Select Day: <select id="day-select"></select></label>
       <label>Date: <input type="date" id="date-select"></label>
       <label>Saved Records: <select required id="saved-dates"></select></label>
+      <button id="logout-btn" class="danger-btn">Logout</button>
     </div>
 
     <!-- Add class input (hidden for viewers) -->
@@ -92,11 +98,12 @@
     <div id="teacher-buttons" class="row">
       <button id="save-btn">Save Attendance</button>
       <button id="export-btn">Export as CSV</button>
+     
     </div>
   </div>
 
 </div>
-
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <script type="module">
   /*************************************
    * Firebase SDKs (v9 modular)
@@ -104,7 +111,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-
+    
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
@@ -283,14 +290,12 @@
   function showLogin() {
     loginSection.classList.remove('hidden');
     attendanceSection.classList.add('hidden');
-    logoutBtn.classList.add('hidden');
     loginTroubleshoot.style.display = 'none';
   }
 
  function showApp() {
   loginSection.classList.add('hidden');
   attendanceSection.classList.remove('hidden');
-  logoutBtn.classList.remove('hidden'); // Show logout button for all roles
 
   populateDayDropdown();
   dateSelect.value = new Date().toISOString().split('T')[0];
@@ -316,7 +321,11 @@
   loginBtn.addEventListener('click', async () => {
     const email = (document.getElementById('username').value || '').trim();
     const pass = (document.getElementById('password').value || '').trim();
-
+     const captchaResponse = grecaptcha.getResponse();
+  if (!captchaResponse) {
+    loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
+    return;
+  }
     // Basic client-side validation
     if (!email || !pass) {
       loginTroubleshoot.style.display = '';
@@ -376,16 +385,24 @@
     }
   });
 
-  
-logoutBtn.addEventListener('click', async () => {
-  try {
-    await signOut(auth); // ✅ Log the user out from Firebase Auth
-    showLogin(); // Redirect to login section
-  } catch (e) {
-    console.error('Logout failed:', e);
-    alert('❌ Failed to log out. Please try again.');
-  }
-});
+  // FIXED: Using the correct ID 'logout-btn' instead of 'logoutBtn'
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      tbody.innerHTML = '';
+      tableHeader.innerHTML = '';
+      savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
+      currentRole = null;
+      userRoleInfo.textContent = '';
+      missingRole.style.display = 'none';
+      alert(' You have been logged out.');
+    } catch (e) {
+      console.error('Logout failed:', e);
+      alert(' Failed to log out. Please try again.');
+    }
+  });
 
   daySelect.addEventListener('change', loadAttendance);
   dateSelect.addEventListener('change', loadAttendance);
@@ -394,7 +411,7 @@ logoutBtn.addEventListener('click', async () => {
     if (currentRole === 'viewer') return; // hard stop
     const input = document.getElementById('new-class-name');
     const newClass = (input.value || '').trim();
-    if (!newClass) { alert('❌ Please enter a class name'); return; }
+    if (!newClass) { alert(' Please enter a class name'); return; }
 
     const day = daySelect.value;
     const subjects = subjectsByDay[day];
@@ -454,7 +471,7 @@ logoutBtn.addEventListener('click', async () => {
 
     const day = daySelect.value;
     const date = dateSelect.value;
-    if (!date) { alert('❌ Please choose a date'); return; }
+    if (!date) { alert(' Please choose a date'); return; }
 
     const docId = `${day}_${date}`;
     const subjects = subjectsByDay[day];
@@ -470,11 +487,11 @@ logoutBtn.addEventListener('click', async () => {
 
     try {
       await setDoc(doc(db, 'attendance', docId), { subjects, data, day, date, updatedBy: auth.currentUser?.uid || null, updatedAt: Date.now() });
-      alert(`✅ Attendance saved for ${day} (${date})`);
+      alert(` Attendance saved for ${day} (${date})`);
       await loadSavedDates();
     } catch (e) {
       console.error(e);
-      alert('❌ Failed to save (check Firestore rules).');
+      alert(' Failed to save (check Firestore rules).');
     }
   }
 
@@ -495,7 +512,7 @@ logoutBtn.addEventListener('click', async () => {
       }
     } catch (e) {
       console.error(e);
-      alert('❌ Failed to load attendance (check Firestore rules).');
+      alert(' Failed to load attendance (check Firestore rules).');
     }
   }
 
@@ -511,7 +528,7 @@ logoutBtn.addEventListener('click', async () => {
       });
     } catch (e) {
       console.error(e);
-      alert('❌ Failed to load saved records (check Firestore rules).');
+      alert(' Failed to load saved records (check Firestore rules).');
     }
   }
 
@@ -534,7 +551,7 @@ logoutBtn.addEventListener('click', async () => {
     try {
       const docSnap = await getDoc(doc(db, 'attendance', docId));
       if (!docSnap.exists()) {
-        alert('❌ No data found for this date');
+        alert(' No data found for this date');
         return;
       }
 
@@ -556,54 +573,11 @@ logoutBtn.addEventListener('click', async () => {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
-      alert('❌ Failed to export (check Firestore rules).');
+      alert(' Failed to export (check Firestore rules).');
     }
   }
 
 </script>
-
-<!--
-======================== IMPORTANT NOTES ========================
-
-If you saw the original error: "FirebaseError: Firebase: Error (auth/invalid-login-credentials)", this likely means:
-  • Wrong email or password (most common) — double-check the email used to create the user in the Firebase Console.
-  • The user doesn't exist in Authentication (auth/user-not-found).
-  • You typed an email that contains stray spaces or used a different email than the one registered.
-
-What I changed in this version to help debugging and recovery:
-  1. Clear, actionable error messages shown on sign-in failure (including error code).
-  2. "Forgot password" button to send a password reset email.
-  3. If a signed-in user is missing a Firestore profile (users/{uid}), the UI shows the UID and an attempt button to create a role doc (useful for admins).
-  4. Client-side email validation to avoid malformed emails reaching Firebase.
-
-If sign-in still fails, please tell me EXACTLY what error code you now see (the UI shows it). If it's `auth/user-not-found`, go to Firebase Console → Authentication → Users and confirm the user's email exists. If it does exist and you still get that error, send me the UID shown in the Console and I'll help you diagnose.
-
-Recommended Firestore rules (adjust to your policy):
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      // Allow the authenticated user to read their own role doc.
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Allow authenticated user to create/update their own user document.
-      // If you don't want users to write their own role, change this to false
-      // and manage role creation from server/admin console.
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /attendance/{docId} {
-      // All authenticated users can read attendance
-      allow read: if request.auth != null;
-      // Only users whose Firestore role == 'teacher' can write
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
-    }
-  }
-}
-
-=================================================================
--->
 
 </body>
 </html>
