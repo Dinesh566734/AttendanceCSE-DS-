@@ -648,7 +648,7 @@ new QRCode(document.getElementById("qrcode"), qrData);
       alert(`Classroom set to:\nLat: ${CLASS_LAT}\nLon: ${CLASS_LON}`);
     }, (err) => {
       alert('Failed to get location: ' + (err.message || err));
-    }, { enableHighAccuracy: true, timeout: 8000 });
+    }, { enableHighAccuracy: true, timeout: 20000 });
   });
 
   startQrBtn.addEventListener('click', async () => {
