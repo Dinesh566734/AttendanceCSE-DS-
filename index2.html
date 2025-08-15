@@ -107,6 +107,11 @@
         </div>
       </div>
     </div>
+    <!-- Add class input (hidden for viewers) -->
+    <div id="add-class-section" class="row">
+      <input type="text" id="new-class-name" placeholder="Enter new class/subject">
+      <button id="add-class-btn">Add Class</button>
+    </div>
 
     <!-- STUDENT: Token detected -->
     <div id="scan-status" class="notice hidden"></div>
@@ -114,11 +119,7 @@
   <input type="text" id="qrInput" placeholder="Paste scanned QR content" />
   <button onclick="markAttendance()">Submit</button>
 
-    <!-- Add class input (hidden for viewers) -->
-    <div id="add-class-section" class="row">
-      <input type="text" id="new-class-name" placeholder="Enter new class/subject">
-      <button id="add-class-btn">Add Class</button>
-    </div>
+    
 
     <table id="attendance-table">
       <thead>
@@ -1029,4 +1030,5 @@ new QRCode(document.getElementById("qrcode"), qrData);
 </script>
 </body>
 </html>
+
 
