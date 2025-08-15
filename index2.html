@@ -652,8 +652,8 @@ new QRCode(document.getElementById("qrcode"), qrData);
 
   const options = {
     enableHighAccuracy: true,
-    timeout: 10000, // 10 seconds timeout
-    maximumAge: 0 // Don't use cached position
+    timeout: 30000, // 30 seconds timeout
+    maximumAge: 30000  // Accept cached position up to 30 seconds old
   };
 
   navigator.geolocation.getCurrentPosition(
