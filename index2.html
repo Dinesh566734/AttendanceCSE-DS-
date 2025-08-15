@@ -761,12 +761,13 @@ new QRCode(document.getElementById("qrcode"), qrData);
           if (dist > 0.03) return alert("Not in classroom");
 
           await db.collection("attendance_marks").add({
-            session_id: qrData.session_id,
-            student_id: firebase.auth().currentUser.uid,
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
+  session_id: qrData.session_id,
+  uid: firebase.auth().currentUser.uid, // changed from student_id
+  lat: pos.coords.latitude,
+  lon: pos.coords.longitude,
+  timestamp: firebase.firestore.FieldValue.serverTimestamp()
+});
+
 
           alert("Attendance marked");
         });
