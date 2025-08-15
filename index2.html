@@ -747,36 +747,57 @@ new QRCode(document.getElementById("qrcode"), qrData);
               Math.sin(dLon / 2) ** 2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-   async function markAttendance() {
-      const qrData = JSON.parse(document.getElementById("qrInput").value);
-      const sessionDoc = await db.collection("attendance_sessions").doc(qrData.session_id).get();
-      if (!sessionDoc.exists) return alert("Invalid QR");
+  async function markAttendance() {
+  try {
+    const qrData = JSON.parse(document.getElementById("qrInput").value);
 
-      const session = sessionDoc.data();
-      if (session.expires_at.toDate() < new Date()) return alert("QR expired");
+    // 1. Verify QR session
+    const sessionDoc = await db.collection("attendance_sessions").doc(qrData.session_id).get();
+    if (!sessionDoc.exists) return alert("Invalid QR");
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, 17.385044, 78.486671);
-          if (dist > 0.03) return alert("Not in classroom");
+    const session = sessionDoc.data();
+    if (session.expires_at.toDate() < new Date()) return alert("QR expired");
 
-        await db.collection("attendance").add({
-  session_id: qrData.session_id,
-  uid: firebase.auth().currentUser.uid,
-  lat: pos.coords.latitude,
-  lon: pos.coords.longitude,
-  timestamp: firebase.firestore.FieldValue.serverTimestamp()
-});
+    // 2. Check location
+    if (!navigator.geolocation) return alert("Geolocation not supported");
 
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const dist = getDistanceKm(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        17.385044,
+        78.486671
+      );
+      if (dist > 0.03) return alert("Not in classroom");
 
+      const uid = firebase.auth().currentUser.uid;
 
+      // 3. Prevent duplicates: check if already marked
+      const existing = await db.collection("attendance").where("session_id", "==", qrData.session_id)
+        .where("uid", "==", uid)
+        .get();
 
-          alert("Attendance marked");
-        });
-      } else {
-        alert("Geolocation not supported");
+      if (!existing.empty) {
+        return alert("Attendance already marked");
       }
-    }
+
+      // 4. Mark attendance
+      await db.collection("attendance").add({
+        session_id: qrData.session_id,
+        uid: uid,
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      alert("Attendance marked");
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Error marking attendance");
+  }
+}
+
   async function handleScanFlow(token) {
     // Show UI hint
     scanStatus.classList.remove('hidden');
