@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Attendance System For CSE(DS)</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f7; margin: 0; padding: 0; }
     header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
@@ -19,7 +23,7 @@
     button:hover { background-color: #2980b9; }
     .danger-btn { background-color: #e74c3c; }
     .danger-btn:hover { background-color: #c0392b; }
-    select, input[type="text"], input[type="password"], input[type="date"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+    select, input[type="text"], input[type="password"], input[type="date"], input[type="number"] { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
     input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .muted { color:#6b7280; font-size: 0.95rem; }
@@ -27,6 +31,9 @@
     .success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; padding:10px; border-radius:6px; margin:10px 0; }
     .error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px; border-radius:6px; margin:10px 0; }
     small { display:block; color:#6b7280 }
+    #qr-box { display:flex; gap:16px; align-items:flex-start; }
+    #qrcode { padding:8px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; }
+    code.kbd { background:#111827; color:#f9fafb; padding:2px 6px; border-radius:4px; }
   </style>
 </head>
 <body>
@@ -43,16 +50,14 @@
       <label style="min-width:280px">Email:<br/><input type="text" id="username" placeholder="Enter email" autocomplete="username" /></label>
       <label style="min-width:280px">Password:<br/><input type="password" id="password" placeholder="Enter password" autocomplete="current-password" /></label>
     </div>
-    <div class="row">
-  <div class="g-recaptcha" data-sitekey="6Lf3HqYrAAAAAAMj597dHly9qhUC5LF-BKdemUnN"></div>
-</div>
+    <!-- <div class="row">
+      <div class="g-recaptcha" data-sitekey="6Lf3HqYrAAAAAAMj597dHly9qhUC5LF-BKdemUnN"></div>
+    </div> -->
     <div class="row">
       <button id="login-btn">Login</button>
       <button id="forgot-btn" class="muted">Forgot password</button>
     </div>
-
     <div id="login-feedback" style="min-height:1.25rem; margin-top:8px"></div>
-
     <div id="login-troubleshoot" class="notice" style="display:none;">
       <strong>Troubleshooting tips</strong>
       <ul>
@@ -68,7 +73,6 @@
   <div id="attendance-section" class="hidden">
     <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2 style="margin: 0;">Mark Attendance</h2>
-      
     </div>
     <h3 style="color:red; margin-top:-6px;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h3>
 
@@ -81,6 +85,34 @@
       <label>Saved Records: <select required id="saved-dates"></select></label>
       <button id="logout-btn" class="danger-btn">Logout</button>
     </div>
+
+    <!-- TEACHER: Start QR Session -->
+    <div id="qr-session-box" class="notice" style="display:none; margin-top:12px;">
+      <div class="row">
+        <strong>QR + Geolocation session (teacher)</strong>
+      </div>
+      <div class="row">
+        <label>Subject: <select id="subject-select"></select></label>
+        <label>Radius (m): <input id="radius-input" type="number" min="5" max="200" step="1" value="35" /></label>
+        <label>Expires in (min): <input id="expire-mins" type="number" min="1" max="15" step="1" value="3" /></label>
+        <button id="set-class-here">Use my current location</button>
+        <button id="start-qr-btn">Start QR Session</button>
+        <button id="end-qr-btn" class="danger-btn" style="display:none;">End Session</button>
+      </div>
+      <div id="qr-box" class="hidden">
+        <div id="qrcode"></div>
+        <div>
+          <div id="qr-info" class="muted"></div>
+          <small>Students: open your camera, scan the QR, tap the link, allow location, done.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT: Token detected -->
+    <div id="scan-status" class="notice hidden"></div>
+     <h1>Mark Attendance</h1>
+  <input type="text" id="qrInput" placeholder="Paste scanned QR content" />
+  <button onclick="markAttendance()">Submit</button>
 
     <!-- Add class input (hidden for viewers) -->
     <div id="add-class-section" class="row">
@@ -98,20 +130,33 @@
     <div id="teacher-buttons" class="row">
       <button id="save-btn">Save Attendance</button>
       <button id="export-btn">Export as CSV</button>
-     
     </div>
   </div>
-
 </div>
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<!-- QR library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-MnQnQf9O9Vf6xNmKxN0h7Qb0sN7c5F6aFqbKp1q5mHcK2lYt8nqf3zZbX2p8n2l0J3O7yZQ0Nw7Qx9mDxQ8Zig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<!-- Google reCAPTCHA -->
+<!-- <script src="https://www.google.com/recaptcha/api.js" async defer></script> -->
+
 <script type="module">
+
+    // Replace with your PC's local IP
+const pcIP = "192.168.1.5"; // Change to your actual IPv4 address
+const port = 5500;
+const filePath = "index.html"; // Your attendance page
+
+const qrData = `http://${pcIP}:${port}/${filePath}`;
+new QRCode(document.getElementById("qrcode"), qrData);
+
   /*************************************
    * Firebase SDKs (v9 modular)
    *************************************/
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-    
+
   const firebaseConfig = {
     apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
     authDomain: "attendance-dd096.firebaseapp.com",
@@ -125,6 +170,13 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
+
+  /*************************************
+   * CONFIG: classroom defaults (override via “Use my current location”)
+   *************************************/
+  let CLASS_LAT = 17.385044;   // TODO: set your classroom latitude
+  let CLASS_LON = 78.486671;   // TODO: set your classroom longitude
+  let CLASS_RADIUS_METERS_DEFAULT = 35;
 
   /*************************************
    * Data
@@ -202,9 +254,9 @@
   };
 
   /*************************************
-   * DOM helpers
+   * DOM
    *************************************/
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
   const loginSection = $("login-section");
   const attendanceSection = $("attendance-section");
@@ -226,34 +278,48 @@
   const userRoleInfo = $("user-role-info");
   const missingRole = $("missing-role");
 
+  // QR session UI
+  const qrSessionBox = $("qr-session-box");
+  const subjectSelect = $("subject-select");
+  const radiusInput = $("radius-input");
+  const expireMinsInput = $("expire-mins");
+  const setClassHereBtn = $("set-class-here");
+  const startQrBtn = $("start-qr-btn");
+  const endQrBtn = $("end-qr-btn");
+  const qrBox = $("qr-box");
+  const qrInfo = $("qr-info");
+  const scanStatus = $("scan-status");
+
   let currentRole = null; // 'teacher' | 'viewer'
+  let activeSessionToken = null;
+  let activeSessionRef = null;
+  let qrcode = null;
 
   /*************************************
-   * Auth state handling
+   * Auth state
    *************************************/
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      // Fetch role from Firestore: users/{uid} => { role: 'teacher' | 'viewer' }
       try {
         const userDocRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userDocRef);
         if (!userSnap.exists()) {
-          // Show guidance to create a role document (UID displayed so admin can add it)
           currentRole = null;
           userRoleInfo.textContent = `Signed in as: ${user.email} (UID: ${user.uid})`;
           missingRole.style.display = '';
-          missingRole.innerHTML = `<strong>No role assigned</strong><br/>Your account exists in Authentication but there is no Firestore profile (users/${user.uid}).<br/>
-            Ask the project admin to create a document at <code>users/${user.uid}</code> with fields <code>email</code> and <code>role</code> ("teacher" or "viewer").
-            <br/><br/><small>If you are an admin and want to create it from this browser, try the button below. This might fail if your Firestore security rules prevent client writes.</small>
-            <div style="margin-top:8px">
-              <select id="role-to-create"><option value="viewer">viewer</option><option value="teacher">teacher</option></select>
-              <button id="create-role-doc">Create role doc (attempt)</button>
-            </div>`;
+          missingRole.innerHTML = `<strong>No role assigned</strong><br/>Create <code>users/${user.uid}</code> with fields <code>email</code>, <code>role</code> ("teacher" or "viewer"), and <code>studentKey</code> (exactly as in students[]).<br/><br/>
+          <small>If you are an admin, you can try creating here (rules may block):</small>
+          <div style="margin-top:8px">
+            <select id="role-to-create"><option value="viewer">viewer</option><option value="teacher">teacher</option></select>
+            <input id="studentKey-to-create" placeholder="e.g., R23XV1M6701 - Addanki Harshitha" style="min-width:340px"/>
+            <button id="create-role-doc">Create role doc (attempt)</button>
+          </div>`;
 
           document.getElementById('create-role-doc').addEventListener('click', async () => {
             const chosen = document.getElementById('role-to-create').value;
+            const skey = document.getElementById('studentKey-to-create').value || null;
             try {
-              await setDoc(doc(db, 'users', user.uid), { email: user.email, role: chosen });
+              await setDoc(doc(db, 'users', user.uid), { email: user.email, role: chosen, studentKey: skey });
               missingRole.className = 'success';
               missingRole.textContent = `Role document created as '${chosen}'. Reloading...`;
               setTimeout(() => location.reload(), 800);
@@ -264,7 +330,7 @@
             }
           });
 
-          showApp(); // still show app in read-only/limited state
+          showApp();
           return;
         }
 
@@ -273,13 +339,19 @@
         missingRole.style.display = 'none';
         loginFeedback.innerHTML = '';
         showApp();
+
+        // If token is present in URL (student flow), try auto-scan immediately
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+          await handleScanFlow(urlToken);
+        }
       } catch (err) {
         console.error('Error fetching user role:', err);
         loginFeedback.innerHTML = `<div class="error">Failed to fetch role: ${err.message || err.code}</div>`;
         showLogin();
       }
     } else {
-      // signed out
       currentRole = null;
       userRoleInfo.textContent = '';
       missingRole.style.display = 'none';
@@ -293,51 +365,51 @@
     loginTroubleshoot.style.display = 'none';
   }
 
- function showApp() {
-  loginSection.classList.add('hidden');
-  attendanceSection.classList.remove('hidden');
+  function showApp() {
+    loginSection.classList.add('hidden');
+    attendanceSection.classList.remove('hidden');
 
-  populateDayDropdown();
-  dateSelect.value = new Date().toISOString().split('T')[0];
-  buildTable(subjectsByDay['Monday']);
-  loadSavedDates();
+    populateDayDropdown();
+    dateSelect.value = new Date().toISOString().split('T')[0];
+    buildTable(subjectsByDay['Monday']);
+    loadSavedDates();
+    populateSubjectSelect();
 
-  if (currentRole === 'viewer') {
-    addClassSection.style.display = 'none';
-    teacherButtons.style.display = 'none';
-    daySelect.disabled = true;
-    dateSelect.disabled = true;
-  } else {
-    addClassSection.style.display = '';
-    teacherButtons.style.display = '';
-    daySelect.disabled = false;
-    dateSelect.disabled = false;
+    if (currentRole === 'viewer') {
+      addClassSection.style.display = 'none';
+      teacherButtons.style.display = 'none';
+      daySelect.disabled = true;
+      dateSelect.disabled = true;
+      qrSessionBox.style.display = 'none';
+    } else {
+      addClassSection.style.display = '';
+      teacherButtons.style.display = '';
+      daySelect.disabled = false;
+      dateSelect.disabled = false;
+      qrSessionBox.style.display = '';
+    }
   }
-}
 
   /*************************************
-   * UI actions
+   * UI actions (login etc.)
    *************************************/
   loginBtn.addEventListener('click', async () => {
     const email = (document.getElementById('username').value || '').trim();
     const pass = (document.getElementById('password').value || '').trim();
-     const captchaResponse = grecaptcha.getResponse();
-  if (!captchaResponse) {
-    loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
-    return;
-  }
-    // Basic client-side validation
+    // const captchaResponse = grecaptcha.getResponse();
+    // if (!captchaResponse) {
+    //   loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
+    //   return;
+    // }
     if (!email || !pass) {
       loginTroubleshoot.style.display = '';
       loginFeedback.innerHTML = `<div class="error">Please enter both email and password.</div>`;
       return;
     }
-
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       loginFeedback.innerHTML = `<div class="error">Please enter a valid email address.</div>`;
       return;
     }
-
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       loginFeedback.innerHTML = `<div class="success">Signed in successfully.</div>`;
@@ -345,27 +417,17 @@
     } catch (e) {
       console.error('firebase auth error:', e);
       loginTroubleshoot.style.display = '';
-
-      // Provide actionable messages based on the error code
       const code = e.code || e.message || 'unknown';
       let message = '';
       switch (code) {
-        case 'auth/invalid-email':
-          message = 'Invalid email format. Please check and try again.'; break;
-        case 'auth/user-disabled':
-          message = 'This user account has been disabled.'; break;
-        case 'auth/user-not-found':
-          message = 'No user found for this email. Make sure the email is registered in Firebase Authentication.'; break;
+        case 'auth/invalid-email': message = 'Invalid email format.'; break;
+        case 'auth/user-disabled': message = 'This user account has been disabled.'; break;
+        case 'auth/user-not-found': message = 'No user found for this email.'; break;
         case 'auth/wrong-password':
-        case 'auth/invalid-login-credentials':
-          message = 'Wrong password. Try resetting your password using the "Forgot password" button.'; break;
-        case 'auth/too-many-requests':
-          message = 'Too many failed attempts. Try again later or reset your password.'; break;
-        default:
-          // sometimes SDK returns messages instead of codes
-          message = e.message || String(e);
+        case 'auth/invalid-login-credentials': message = 'Wrong password.'; break;
+        case 'auth/too-many-requests': message = 'Too many failed attempts. Try again later.'; break;
+        default: message = e.message || String(e);
       }
-
       loginFeedback.innerHTML = `<div class="error"><strong>Sign-in failed</strong>: ${message}<br/><small>Error code: ${code}</small></div>`;
     }
   });
@@ -373,72 +435,45 @@
   forgotBtn.addEventListener('click', async () => {
     const email = (document.getElementById('username').value || '').trim();
     if (!email) {
-      loginFeedback.innerHTML = `<div class="notice">Enter your email in the Email field and click "Forgot password" to receive a reset link.</div>`;
+      loginFeedback.innerHTML = `<div class="notice">Enter your email and click "Forgot password".</div>`;
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email);
-      loginFeedback.innerHTML = `<div class="success">Password reset email sent to ${email}. Check your inbox (and spam).</div>`;
+      loginFeedback.innerHTML = `<div class="success">Password reset email sent to ${email}.</div>`;
     } catch (e) {
       console.error('password reset error', e);
       loginFeedback.innerHTML = `<div class="error">Failed to send reset email: ${e.code || e.message}</div>`;
     }
   });
 
-  // FIXED: Using the correct ID 'logout-btn' instead of 'logoutBtn'
   logoutBtn.addEventListener('click', async () => {
     try {
       await signOut(auth);
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
+      $("username").value = '';
+      $("password").value = '';
       tbody.innerHTML = '';
       tableHeader.innerHTML = '';
       savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
       currentRole = null;
       userRoleInfo.textContent = '';
       missingRole.style.display = 'none';
-      alert(' You have been logged out.');
+      alert('You have been logged out.');
     } catch (e) {
       console.error('Logout failed:', e);
-      alert(' Failed to log out. Please try again.');
+      alert('Failed to log out. Please try again.');
     }
   });
 
-  daySelect.addEventListener('change', loadAttendance);
-  dateSelect.addEventListener('change', loadAttendance);
-
-  addClassBtn.addEventListener('click', () => {
-    if (currentRole === 'viewer') return; // hard stop
-    const input = document.getElementById('new-class-name');
-    const newClass = (input.value || '').trim();
-    if (!newClass) { alert(' Please enter a class name'); return; }
-
-    const day = daySelect.value;
-    const subjects = subjectsByDay[day];
-
-    if (subjects.includes(newClass)) { alert('⚠ This class already exists for today.'); return; }
-
-    // capture existing state
-    const existingData = {};
-    document.querySelectorAll('#attendance-body tr').forEach(row => {
-      const student = row.cells[0].textContent;
-      existingData[student] = [];
-      for (let i = 1; i < row.cells.length; i++) {
-        existingData[student].push(row.cells[i].firstChild.checked);
-      }
-    });
-
-    subjects.push(newClass);
-    buildTable(subjects, existingData);
-    input.value = '';
-  });
-
+  /*************************************
+   * Attendance table (existing)
+   *************************************/
+  daySelect.addEventListener('change', () => { populateSubjectSelect(); loadAttendance(); });
+  dateSelect.addEventListener('change', () => { populateSubjectSelect(); loadAttendance(); });
+  addClassBtn.addEventListener('click', addClass);
   saveBtn.addEventListener('click', saveAttendance);
   exportBtn.addEventListener('click', exportCSV);
 
-  /*************************************
-   * Core features
-   *************************************/
   function populateDayDropdown() {
     daySelect.innerHTML = '';
     Object.keys(subjectsByDay).forEach(day => {
@@ -449,14 +484,24 @@
     });
   }
 
+  function populateSubjectSelect() {
+    subjectSelect.innerHTML = '';
+    const subjects = subjectsByDay[daySelect.value] || [];
+    subjects.forEach((s, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i); // store index
+      opt.textContent = s;
+      subjectSelect.appendChild(opt);
+    });
+  }
+
   function buildTable(subjects, existingData = {}) {
     tableHeader.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
     tbody.innerHTML = '';
-
     students.forEach(student => {
       const row = document.createElement('tr');
       let rowHTML = `<td>${student}</td>`;
-      subjects.forEach((sub, idx) => {
+      subjects.forEach((_, idx) => {
         const checked = existingData[student]?.[idx] ? 'checked' : '';
         const disabled = currentRole === 'viewer' ? 'disabled' : '';
         rowHTML += `<td><input type="checkbox" ${checked} ${disabled}></td>`;
@@ -468,11 +513,9 @@
 
   async function saveAttendance() {
     if (currentRole !== 'teacher') { alert('Only teachers can save.'); return; }
-
     const day = daySelect.value;
     const date = dateSelect.value;
-    if (!date) { alert(' Please choose a date'); return; }
-
+    if (!date) { alert('Please choose a date'); return; }
     const docId = `${day}_${date}`;
     const subjects = subjectsByDay[day];
 
@@ -487,11 +530,11 @@
 
     try {
       await setDoc(doc(db, 'attendance', docId), { subjects, data, day, date, updatedBy: auth.currentUser?.uid || null, updatedAt: Date.now() });
-      alert(` Attendance saved for ${day} (${date})`);
+      alert(`Attendance saved for ${day} (${date})`);
       await loadSavedDates();
     } catch (e) {
       console.error(e);
-      alert(' Failed to save (check Firestore rules).');
+      alert('Failed to save (check Firestore rules).');
     }
   }
 
@@ -499,20 +542,19 @@
     const day = daySelect.value;
     const date = dateSelect.value;
     const docId = `${day}_${date}`;
-
     try {
       const snap = await getDoc(doc(db, 'attendance', docId));
       if (snap.exists()) {
         const saved = snap.data();
-        // If subjects were customized for that day, use them
         subjectsByDay[day] = Array.isArray(saved.subjects) && saved.subjects.length ? saved.subjects : subjectsByDay[day];
         buildTable(subjectsByDay[day], saved.data);
       } else {
         buildTable(subjectsByDay[day]);
       }
+      populateSubjectSelect();
     } catch (e) {
       console.error(e);
-      alert(' Failed to load attendance (check Firestore rules).');
+      alert('Failed to load attendance (check Firestore rules).');
     }
   }
 
@@ -528,7 +570,7 @@
       });
     } catch (e) {
       console.error(e);
-      alert(' Failed to load saved records (check Firestore rules).');
+      alert('Failed to load saved records (check Firestore rules).');
     }
   }
 
@@ -541,27 +583,45 @@
     loadAttendance();
   });
 
+  function addClass() {
+    if (currentRole === 'viewer') return;
+    const input = document.getElementById('new-class-name');
+    const newClass = (input.value || '').trim();
+    if (!newClass) { alert('Please enter a class name'); return; }
+
+    const day = daySelect.value;
+    const subjects = subjectsByDay[day];
+    if (subjects.includes(newClass)) { alert('This class already exists for today.'); return; }
+
+    const existingData = {};
+    document.querySelectorAll('#attendance-body tr').forEach(row => {
+      const student = row.cells[0].textContent;
+      existingData[student] = [];
+      for (let i = 1; i < row.cells.length; i++) {
+        existingData[student].push(row.cells[i].firstChild.checked);
+      }
+    });
+
+    subjects.push(newClass);
+    buildTable(subjects, existingData);
+    input.value = '';
+    populateSubjectSelect();
+  }
+
   async function exportCSV() {
     if (currentRole !== 'teacher') { alert('Only teachers can export.'); return; }
-
     const day = daySelect.value;
     const date = dateSelect.value;
     const docId = `${day}_${date}`;
-
     try {
       const docSnap = await getDoc(doc(db, 'attendance', docId));
-      if (!docSnap.exists()) {
-        alert(' No data found for this date');
-        return;
-      }
-
+      if (!docSnap.exists()) { alert('No data found for this date'); return; }
       const saved = docSnap.data();
       let csvContent = `Date,${date},Day,${day}\n`;
       csvContent += 'Student,' + (saved.subjects || []).join(',') + '\n';
       Object.keys(saved.data || {}).forEach(student => {
         csvContent += student + ',' + (saved.data[student] || []).map(p => p ? 'Present' : 'Absent').join(',') + '\n';
       });
-
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -573,11 +633,291 @@
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
-      alert(' Failed to export (check Firestore rules).');
+      alert('Failed to export (check Firestore rules).');
     }
   }
 
-</script>
+  /*************************************
+   * QR + Geolocation session (teacher)
+   *************************************/
+  setClassHereBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+    navigator.geolocation.getCurrentPosition((pos) => {
+      CLASS_LAT = pos.coords.latitude;
+      CLASS_LON = pos.coords.longitude;
+      alert(`Classroom set to:\nLat: ${CLASS_LAT}\nLon: ${CLASS_LON}`);
+    }, (err) => {
+      alert('Failed to get location: ' + (err.message || err));
+    }, { enableHighAccuracy: true, timeout: 8000 });
+  });
 
+  startQrBtn.addEventListener('click', async () => {
+    if (currentRole !== 'teacher') { alert('Only teachers can start sessions.'); return; }
+
+    const subjectIndex = parseInt(subjectSelect.value, 10);
+    const subjectName = (subjectsByDay[daySelect.value] || [])[subjectIndex];
+    if (!subjectName) { alert('Select a subject'); return; }
+
+    const radiusMeters = parseInt(radiusInput.value || CLASS_RADIUS_METERS_DEFAULT, 10);
+    const expiresInMinutes = parseInt(expireMinsInput.value || 3, 10);
+    const day = daySelect.value;
+    const date = dateSelect.value;
+    if (!date) { alert('Choose a date'); return; }
+
+
+      async function generateQR() {
+      const token = Math.random().toString(36).substring(2, 10);
+      const sessionRef = await db.collection("attendance_sessions").add({
+        class_id: "CSE-DS-2025",
+        date: new Date().toISOString().split("T")[0],
+        token: token,
+        expires_at: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 3 * 60000)) // 3 min
+      });
+
+      new QRCode(document.getElementById("qrcode"), JSON.stringify({
+        token: token,
+        session_id: sessionRef.id
+      }));
+    }
+    generateQR();
+
+    // Generate a random token
+    const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const expiresAt = Date.now() + expiresInMinutes * 60 * 1000;
+
+    const sessionDoc = {
+      token,
+      day,
+      date,
+      subjectIndex,
+      subjectName,
+      classLat: CLASS_LAT,
+      classLon: CLASS_LON,
+      radiusMeters,
+      createdBy: auth.currentUser?.uid || null,
+      createdAt: serverTimestamp(),
+      expiresAt
+    };
+
+    try {
+      await setDoc(doc(db, 'attendance_sessions', token), sessionDoc);
+      activeSessionToken = token;
+      activeSessionRef = doc(db, 'attendance_sessions', token);
+      renderQRCode(token);
+      endQrBtn.style.display = '';
+      qrBox.classList.remove('hidden');
+      qrInfo.innerHTML = `<div><strong>Session:</strong> ${day} ${date} — <code class="kbd">${subjectName}</code><br/>Expires at: ${new Date(expiresAt).toLocaleTimeString()}</div>`;
+    } catch (e) {
+      console.error(e);
+      alert('Failed to start session (check Firestore rules).');
+    }
+  });
+
+  endQrBtn.addEventListener('click', async () => {
+    if (!activeSessionToken) return;
+    try {
+      // Soft-end by setting expiresAt = now
+      const ref = doc(db, 'attendance_sessions', activeSessionToken);
+      await setDoc(ref, { expiresAt: Date.now() }, { merge: true });
+    } catch (e) { console.warn(e); }
+    activeSessionToken = null;
+    activeSessionRef = null;
+    endQrBtn.style.display = 'none';
+    qrBox.classList.add('hidden');
+    $("qrcode").innerHTML = '';
+    qrInfo.textContent = '';
+  });
+
+  function renderQRCode(token) {
+    const url = `${window.location.origin}${window.location.pathname}?token=${encodeURIComponent(token)}`;
+    $("qrcode").innerHTML = '';
+    qrcode = new QRCode("qrcode", { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+  }
+
+  /*************************************
+   * Student scan flow
+   *************************************/
+   function getDistanceKm(lat1, lon1, lat2, lon2) {
+      var R = 6371;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) *
+              Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+   async function markAttendance() {
+      const qrData = JSON.parse(document.getElementById("qrInput").value);
+      const sessionDoc = await db.collection("attendance_sessions").doc(qrData.session_id).get();
+      if (!sessionDoc.exists) return alert("Invalid QR");
+
+      const session = sessionDoc.data();
+      if (session.expires_at.toDate() < new Date()) return alert("QR expired");
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, 17.385044, 78.486671);
+          if (dist > 0.03) return alert("Not in classroom");
+
+          await db.collection("attendance_marks").add({
+            session_id: qrData.session_id,
+            student_id: firebase.auth().currentUser.uid,
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          alert("Attendance marked");
+        });
+      } else {
+        alert("Geolocation not supported");
+      }
+    }
+  async function handleScanFlow(token) {
+    // Show UI hint
+    scanStatus.classList.remove('hidden');
+    scanStatus.innerHTML = `QR token detected. Verifying your location…`;
+
+    // 1) Load session
+    const sessSnap = await getDoc(doc(db, 'attendance_sessions', token));
+    if (!sessSnap.exists()) {
+      scanStatus.className = 'error';
+      scanStatus.innerHTML = `Invalid or expired session.`;
+      return;
+    }
+    const sess = sessSnap.data();
+    if (Date.now() > (sess.expiresAt || 0)) {
+      scanStatus.className = 'error';
+      scanStatus.innerHTML = `This session has expired.`;
+      return;
+    }
+
+    // 2) Get studentKey from users/{uid}
+    const uid = auth.currentUser?.uid;
+    const uref = await getDoc(doc(db, 'users', uid));
+    const udata = uref.exists() ? uref.data() : null;
+    const studentKey = udata?.studentKey;
+    if (!studentKey || !students.includes(studentKey)) {
+      scanStatus.className = 'error';
+      scanStatus.innerHTML = `Your profile is missing a valid <code>studentKey</code>. Ask admin to set it to exactly match your name in the list.`;
+      return;
+    }
+
+    // 3) Get device geolocation
+    if (!navigator.geolocation) {
+      scanStatus.className = 'error';
+      scanStatus.innerHTML = `Geolocation not supported on this device.`;
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const distM = distanceMeters(lat, lon, sess.classLat, sess.classLon);
+
+      if (distM <= (sess.radiusMeters || 35)) {
+        // 4) Mark present in attendance/{day_date} for subjectIndex
+        try {
+          await markPresentForStudent(studentKey, sess.day, sess.date, sess.subjectIndex);
+
+          // Also log the scan (audit)
+          await setDoc(doc(db, 'attendance_scans', `${token}_${uid}`), {
+            token, uid, studentKey, lat, lon, at: Date.now()
+          });
+
+          scanStatus.className = 'success';
+          scanStatus.innerHTML = `Marked present for <strong>${sess.subjectName}</strong>. You are inside the classroom radius (~${Math.round(distM)} m).`;
+        } catch (e) {
+          console.error(e);
+          scanStatus.className = 'error';
+          scanStatus.innerHTML = `Failed to mark attendance: ${e.message || e}`;
+        }
+      } else {
+        scanStatus.className = 'error';
+        scanStatus.innerHTML = `You are outside the classroom radius. Distance ≈ ${Math.round(distM)} m.`;
+      }
+    }, (err) => {
+      scanStatus.className = 'error';
+      scanStatus.innerHTML = `Failed to get your location: ${err.message || err}`;
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }
+
+  async function markPresentForStudent(studentKey, day, date, subjectIndex) {
+    const docId = `${day}_${date}`;
+    const attRef = doc(db, 'attendance', docId);
+    const attSnap = await getDoc(attRef);
+
+    // Ensure subjects array is from timetable
+    const subjects = subjectsByDay[day] || [];
+    const blankRow = subjects.map(() => false);
+
+    let data = {};
+    if (attSnap.exists()) {
+      const saved = attSnap.data();
+      // If a custom subjects set was saved that day, respect it
+      const inUseSubjects = Array.isArray(saved.subjects) && saved.subjects.length ? saved.subjects : subjects;
+      // Expand if needed
+      const rowTemplate = inUseSubjects.map(() => false);
+
+      data = saved.data || {};
+      // Normalize existing rows
+      Object.keys(data).forEach(k => {
+        if (!Array.isArray(data[k]) || data[k].length !== inUseSubjects.length) {
+          const arr = rowTemplate.slice();
+          (data[k] || []).forEach((v, i) => { if (i < arr.length) arr[i] = !!v; });
+          data[k] = arr;
+        }
+      });
+
+      if (!data[studentKey]) data[studentKey] = rowTemplate.slice();
+      data[studentKey][subjectIndex] = true;
+
+      await setDoc(attRef, {
+        subjects: inUseSubjects,
+        data,
+        day, date,
+        updatedBy: auth.currentUser?.uid || null,
+        updatedAt: Date.now()
+      });
+    } else {
+      // New doc
+      data[studentKey] = blankRow.slice();
+      data[studentKey][subjectIndex] = true;
+
+      await setDoc(attRef, {
+        subjects,
+        data,
+        day, date,
+        updatedBy: auth.currentUser?.uid || null,
+        updatedAt: Date.now()
+      });
+    }
+  }
+
+  function distanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI/180;
+    const dLon = (lon2 - lon1) * Math.PI/180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+              Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  /*************************************
+   * Token in URL (student deep‑link)
+   *************************************/
+  // If the user logs in after opening the link, we already handle it in onAuthStateChanged.
+  // If the user is already logged in and opens a token link, handle immediately:
+  (async function immediateTokenCheck() {
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (token && auth.currentUser) {
+      await handleScanFlow(token);
+    }
+  })();
+
+</script>
 </body>
 </html>
