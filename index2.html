@@ -760,13 +760,14 @@ new QRCode(document.getElementById("qrcode"), qrData);
           const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, 17.385044, 78.486671);
           if (dist > 0.03) return alert("Not in classroom");
 
-          await db.collection("attendance").add({
+        await db.collection("attendance").add({
   session_id: qrData.session_id,
   uid: firebase.auth().currentUser.uid,
   lat: pos.coords.latitude,
   lon: pos.coords.longitude,
   timestamp: firebase.firestore.FieldValue.serverTimestamp()
 });
+
 
 
 
