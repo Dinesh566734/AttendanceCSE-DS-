@@ -16,7 +16,7 @@
     .hidden { display: none; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background-color: #34495e; color: white; }
+    th { background-color: #34495e; color: white; position: relative; }
     tr:nth-child(even) { background-color: #f8f9fb; }
     tr:hover { background-color: #f1f5f9; }
     button { margin: 10px 5px; padding: 10px 18px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer; }
@@ -81,6 +81,47 @@
       font-size: 0.8rem;
       color: #6b7280;
       margin-top: 10px;
+    }
+
+    /* Select All button styling */
+    .select-all-btn {
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      z-index: 10;
+    }
+    
+    .select-all-btn:hover {
+      background-color: #219a52;
+    }
+    
+    .select-all-btn.deselect {
+      background-color: #e67e22;
+    }
+    
+    .select-all-btn.deselect:hover {
+      background-color: #d35400;
+    }
+
+    /* Add extra space for select all buttons */
+    .table-container {
+      position: relative;
+      padding-bottom: 45px;
+    }
+
+    /* Style for subject headers */
+    .subject-header {
+      position: relative;
+      padding-bottom: 40px;
     }
   </style>
 </head>
@@ -173,14 +214,14 @@
   <input type="text" id="qrInput" placeholder="Paste scanned QR content" />
   <button onclick="markAttendance()">Submit</button>
 
-    
-
-    <table id="attendance-table">
-      <thead>
-        <tr id="table-header"></tr>
-      </thead>
-      <tbody id="attendance-body"></tbody>
-    </table>
+    <div class="table-container">
+      <table id="attendance-table">
+        <thead>
+          <tr id="table-header"></tr>
+        </thead>
+        <tbody id="attendance-body"></tbody>
+      </table>
+    </div>
 
     <div class="last-updated" id="last-updated-info"></div>
 
@@ -725,7 +766,7 @@ new QRCode(document.getElementById("qrcode"), qrData);
   });
 
   /*************************************
-   * Attendance table (existing)
+   * Attendance table with Select All functionality
    *************************************/
   addClassBtn.addEventListener('click', addClass);
   saveBtn.addEventListener('click', saveAttendance);
@@ -753,20 +794,84 @@ new QRCode(document.getElementById("qrcode"), qrData);
   }
 
   function buildTable(subjects, existingData = {}) {
-    tableHeader.innerHTML = '<th>Student</th>' + subjects.map(sub => `<th>${sub}</th>`).join('');
+    // Clear existing content
+    tableHeader.innerHTML = '';
     tbody.innerHTML = '';
+
+    // Build header row
+    let headerHTML = '<th>Student</th>';
+    subjects.forEach((sub, idx) => {
+      headerHTML += `<th class="subject-header">
+        ${sub}
+        ${currentRole === 'teacher' ? `<button class="select-all-btn" onclick="toggleSelectAll(${idx})" data-subject-index="${idx}">Select All</button>` : ''}
+      </th>`;
+    });
+    tableHeader.innerHTML = headerHTML;
+
+    // Build body rows
     students.forEach(student => {
       const row = document.createElement('tr');
       let rowHTML = `<td>${student}</td>`;
       subjects.forEach((_, idx) => {
         const checked = existingData[student]?.[idx] ? 'checked' : '';
         const disabled = currentRole === 'viewer' ? 'disabled' : '';
-        rowHTML += `<td><input type="checkbox" ${checked} ${disabled}></td>`;
+        rowHTML += `<td><input type="checkbox" ${checked} ${disabled} data-subject-index="${idx}"></td>`;
       });
       row.innerHTML = rowHTML;
       tbody.appendChild(row);
     });
+
+    // Update select all button states
+    if (currentRole === 'teacher') {
+      updateSelectAllButtons();
+    }
   }
+
+  // Global function for select all buttons (needs to be accessible from onclick)
+  window.toggleSelectAll = function(subjectIndex) {
+    const checkboxes = document.querySelectorAll(`#attendance-body input[type="checkbox"][data-subject-index="${subjectIndex}"]`);
+    const button = document.querySelector(`.select-all-btn[data-subject-index="${subjectIndex}"]`);
+    
+    // Check if all are currently selected
+    const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+    
+    // Toggle all checkboxes
+    checkboxes.forEach(cb => {
+      cb.checked = !allSelected;
+    });
+    
+    // Update button text and style
+    updateSelectAllButton(button, !allSelected);
+  };
+
+  function updateSelectAllButtons() {
+    if (currentRole !== 'teacher') return;
+    
+    document.querySelectorAll('.select-all-btn').forEach(button => {
+      const subjectIndex = parseInt(button.getAttribute('data-subject-index'));
+      const checkboxes = document.querySelectorAll(`#attendance-body input[type="checkbox"][data-subject-index="${subjectIndex}"]`);
+      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+      
+      updateSelectAllButton(button, allSelected);
+    });
+  }
+
+  function updateSelectAllButton(button, allSelected) {
+    if (allSelected) {
+      button.textContent = 'Deselect All';
+      button.classList.add('deselect');
+    } else {
+      button.textContent = 'Select All';
+      button.classList.remove('deselect');
+    }
+  }
+
+  // Update select all buttons when individual checkboxes are clicked
+  document.addEventListener('change', (e) => {
+    if (e.target.type === 'checkbox' && e.target.hasAttribute('data-subject-index') && currentRole === 'teacher') {
+      updateSelectAllButtons();
+    }
+  });
 
   async function saveAttendance() {
     if (currentRole !== 'teacher') { alert('Only teachers can save.'); return; }
