@@ -84,25 +84,30 @@
     }
 
     /* Select All button styling */
-    .select-all-btn {
-      position: absolute;
-      bottom: -35px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 4px 8px;
-      font-size: 0.75rem;
-      background-color: #27ae60;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      white-space: nowrap;
-      z-index: 10;
-    }
-    
-    .select-all-btn:hover {
-      background-color: #219a52;
-    }
+   .select-all-btn {
+  background: #3498db;      /* Modern blue */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  /* padding: 3px 8px; */
+  margin-left: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  transition:  0.2s ease;
+}
+
+.select-all-btn:hover {
+  background: #2980b9;      /* Darker blue on hover */
+}
+
+.select-all-btn:active {
+  background: #1f5c87;      /* Even darker when clicked */
+}
+
+.subject-header {
+  white-space: nowrap;
+}
+
     
     .select-all-btn.deselect {
       background-color: #e67e22;
@@ -799,14 +804,21 @@ new QRCode(document.getElementById("qrcode"), qrData);
     tbody.innerHTML = '';
 
     // Build header row
-    let headerHTML = '<th>Student</th>';
-    subjects.forEach((sub, idx) => {
-      headerHTML += `<th class="subject-header">
-        ${sub}
-        ${currentRole === 'teacher' ? `<button class="select-all-btn" onclick="toggleSelectAll(${idx})" data-subject-index="${idx}">Select All</button>` : ''}
-      </th>`;
-    });
-    tableHeader.innerHTML = headerHTML;
+    let headerHTML = '<th>Students</th>';
+subjects.forEach((sub, idx) => {
+  headerHTML += `<th class="subject-header">
+    ${sub}
+    ${currentRole === 'teacher' ? `
+      <button class="select-all-btn" 
+              onclick="toggleSelectAll(${idx})" 
+              data-subject-index="${idx}" 
+              title="Select all students for ${sub}">
+        ✓
+      </button>` : ''}
+  </th>`;
+});
+tableHeader.innerHTML = headerHTML;
+
 
     // Build body rows
     students.forEach(student => {
