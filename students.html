@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Attendance Overview</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin:0; background:#eef2f7; }
+    header { background:#2c3e50; color:white; padding:20px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:1.5rem; }
+    .btn { padding:8px 14px; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    #logout-btn { background:#e74c3c; color:white; }
+    #logout-btn:hover { background:#c0392b; }
+    #back-btn { background:#3498db; color:white; margin-right:10px; }
+    #back-btn:hover { background:#2980b9; }
+    #download-csv { background:#27ae60; color:white; margin-top:15px; display:none; }
+    #download-csv:hover { background:#1e874b; }
+    .container { max-width:1100px; margin:20px auto; padding:20px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    h2 { margin-top:0; }
+    ul { list-style:none; padding:0; }
+    li { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
+    li:hover { background:#f1f5f9; }
+    table { border-collapse:collapse; width:100%; margin-top:20px; }
+    th, td { border:1px solid #e2e8f0; padding:10px; text-align:center; }
+    th { background:#34495e; color:white; }
+    tr:nth-child(even){ background:#f8fafc; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Student Attendance Overview</h1>
+    <div>
+      <button id="back-btn" class="btn">Back to Dashboard</button>
+      <button id="logout-btn" class="btn">Logout</button>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div style="margin-bottom:15px;">
+  <input id="search-box" type="text" placeholder="Search student..." style="padding:8px; width:60%; border:1px solid #ccc; border-radius:6px;">
+  <br><br>
+  <label>From: <input id="start-date" type="date"></label>
+  <label style="margin-left:10px;">To: <input id="end-date" type="date"></label>
+</div>
+
+    <h2>All Students</h2>
+    <ul id="student-list"><li>Loading students…</li></ul>
+
+    <div id="student-details" style="display:none;">
+      <h2 id="student-name"></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Classes Attended</th>
+            <th>Total Classes</th>
+            <th>Average (%)</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-body"></tbody>
+      </table>
+      <button id="download-csv" class="btn">Download CSV</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
+      authDomain: "attendance-dd096.firebaseapp.com",
+      projectId: "attendance-dd096",
+      storageBucket: "attendance-dd096.firebasestorage.app",
+      messagingSenderId: "1064169386680",
+      appId: "1:1064169386680:web:301de8d261c27216aeba4d",
+      measurementId: "G-6XS9BM0852"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const studentList = document.getElementById('student-list');
+    const detailsDiv = document.getElementById('student-details');
+    const studentName = document.getElementById('student-name');
+    const tbody = document.getElementById('attendance-body');
+    const logoutBtn = document.getElementById('logout-btn');
+    const backBtn = document.getElementById('back-btn');
+    const downloadBtn = document.getElementById('download-csv');
+
+    let lastReport = null;
+    let currentStudentName = "";
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = "index10.html";
+    });
+
+    // Back
+    backBtn.addEventListener('click', () => {
+      window.location.href = "index10.html";
+    });
+
+    // CSV export
+    function generateCSV(report, studentName) {
+      let rows = [["Student","Subject","Classes Attended","Total Classes","Average (%)"]];
+      Object.keys(report).forEach(sub => {
+        const {present, total} = report[sub];
+        const avg = total ? ((present/total)*100).toFixed(1) : 0;
+        rows.push([studentName, sub, present, total, avg + "%"]);
+      });
+      return rows.map(r => r.join(",")).join("\n");
+    }
+
+    downloadBtn.addEventListener('click', () => {
+      if (!lastReport) return;
+      const csvContent = generateCSV(lastReport, currentStudentName);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${currentStudentName.replace(/\s+/g,'_')}_attendance.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Load students
+  let allStudents = [];
+
+async function loadStudents() {
+  const snap = await getDocs(collection(db, "attendance"));
+  const studentKeys = new Set();
+
+  snap.forEach(doc => {
+    const data = doc.data();
+    if (data.data) {
+      Object.keys(data.data).forEach(key => studentKeys.add(key));
+    }
+  });
+
+  allStudents = [...studentKeys].sort();
+  renderStudentList(allStudents);
+}
+
+function renderStudentList(list) {
+  studentList.innerHTML = "";
+  list.forEach(key => {
+    const li = document.createElement("li");
+    li.textContent = key;
+    li.addEventListener("click", () => loadStudentAttendance(key));
+    studentList.appendChild(li);
+  });
+}
+
+// Search filter
+document.getElementById('search-box').addEventListener('input', e => {
+  const term = e.target.value.toLowerCase();
+  const filtered = allStudents.filter(k => k.toLowerCase().includes(term));
+  renderStudentList(filtered);
+});
+
+
+
+ async function loadStudentAttendance(studentKey) {
+  const snap = await getDocs(collection(db, "attendance"));
+
+  const subjectStats = {};
+  const startDate = document.getElementById("start-date").value;
+  const endDate = document.getElementById("end-date").value;
+
+  snap.forEach(doc => {
+    const docId = doc.id; // e.g., "Monday_2025-08-20"
+    const datePart = docId.split("_")[1]; // "2025-08-20"
+
+    // Filter by date range if set
+    if (startDate && datePart < startDate) return;
+    if (endDate && datePart > endDate) return;
+
+    const data = doc.data();
+    if (Array.isArray(data.subjects) && data.data && data.data[studentKey]) {
+      const studentEntry = data.data[studentKey];
+      data.subjects.forEach((sub, i) => {
+        if (!subjectStats[sub]) subjectStats[sub] = { present:0, total:0 };
+        subjectStats[sub].total++;
+        if (studentEntry[i] === true) {
+          subjectStats[sub].present++;
+        }
+      });
+    }
+  });
+
+  // Render table
+  currentStudentName = studentKey;
+  studentName.textContent = studentKey;
+  tbody.innerHTML = "";
+  Object.keys(subjectStats).forEach(sub => {
+    const {present, total} = subjectStats[sub];
+    const avg = total ? ((present/total)*100).toFixed(1) : 0;
+    tbody.innerHTML += `
+      <tr>
+        <td>${sub}</td>
+        <td>${present}</td>
+        <td>${total}</td>
+        <td>${avg}%</td>
+      </tr>
+    `;
+  });
+
+  lastReport = subjectStats;
+  downloadBtn.style.display = "inline-block";
+  detailsDiv.style.display = "block";
+}
+
+
+
+    // Auth check
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "index10.html";
+      } else {
+        loadStudents();
+      }
+    });
+  </script>
+</body>
+</html>

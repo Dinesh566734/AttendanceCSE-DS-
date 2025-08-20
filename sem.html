@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Class Records - Teacher View</title>
+  <style>
+    :root{
+      --ink:#2c3e50;--ink-2:#34495e;--bg:#eef2f7;--brand:#3498db;--brand-2:#2980b9;--ok:#27ae60;--warn:#e67e22;--err:#e74c3c
+    }
+    *{box-sizing:border-box}
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: var(--bg); margin: 0; }
+    header { background-color: var(--ink); color: white; padding: 22px; text-align: center; display:flex; justify-content:space-between; align-items:center; gap:10px }
+    header h1 { margin:0; font-size:1.5rem }
+    .header-actions { display:flex; gap:10px }
+    .container { max-width: 1100px; margin: 32px auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    h2 { margin: 0 0 16px; color: var(--ink); }
+    .row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom: 8px; }
+    label { display:flex; align-items:center; gap:8px; font-weight:600; color:#475569 }
+    input[type="date"], select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background:#fff; }
+    button { padding: 10px 18px; border: none; border-radius: 8px; background-color: var(--brand); color: white; cursor: pointer; font-weight:600 }
+    button:hover { background-color: var(--brand-2); }
+
+    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 8px; display:none; font-weight:600 }
+    .msg.show{ display:block }
+    .msg.info{ background:#e0f2fe; color:#0c4a6e }
+    .msg.err{ background:#fee2e2; color:#7f1d1d }
+    .msg.ok{ background:#dcfce7; color:#14532d }
+
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
+    th { background-color: var(--ink-2); color: white; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+    tr:hover { background-color: #f1f5f9; }
+
+    .muted { color:#64748b; font-style: italic }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Teacher View - Classes Between Dates</h1>
+  <div class="header-actions">
+    <button id="dashboard-btn">Back to Dashboard</button>
+    <button id="logout-btn">Logout</button>
+  </div>
+</header>
+<div class="container">
+  <h2>Filter Classes</h2>
+  <div class="row">
+    <label>From: <input type="date" id="from-date"></label>
+    <label>To: <input type="date" id="to-date"></label>
+    <label>Subjects: 
+      <select id="subject-filter" multiple size="4" style="min-width:200px"></select>
+    </label>
+    <button id="filter-btn" title="Load classes in the selected range">Filter</button>
+  </div>
+  <div id="status" class="msg info">Initializing…</div>
+
+  <table id="class-table" aria-label="Filtered classes table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Day</th>
+        <th>Subjects</th>
+        <th>Updated By</th>
+      </tr>
+    </thead>
+    <tbody id="class-body"><tr><td colspan="4" class="muted">Select a date range and click Filter</td></tr></tbody>
+  </table>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCTx8SuwqsqqVzgsfPkaaMEirYeKWCqC5Y",
+    authDomain: "attendance-dd096.firebaseapp.com",
+    projectId: "attendance-dd096",
+    storageBucket: "attendance-dd096.firebasestorage.app",
+    messagingSenderId: "1064169386680",
+    appId: "1:1064169386680:web:301de8d261c27216aeba4d",
+    measurementId: "G-6XS9BM0852"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const tbody = document.getElementById('class-body');
+  const statusEl = document.getElementById('status');
+  const filterBtn = document.getElementById('filter-btn');
+  const fromEl = document.getElementById('from-date');
+  const toEl   = document.getElementById('to-date');
+  const subjectFilter = document.getElementById('subject-filter');
+  const logoutBtn = document.getElementById('logout-btn');
+  const dashboardBtn = document.getElementById('dashboard-btn');
+
+  function setMsg(text, type='info'){
+    statusEl.textContent = text;
+    statusEl.className = `msg show ${type}`;
+  }
+
+  function ymd(d){
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  (function setDefaultDates(){
+    const now = new Date();
+    toEl.value = ymd(now);
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    fromEl.value = ymd(first);
+  })();
+
+  function normalizeDate(val){
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    if (val && typeof val.toDate === 'function') return ymd(val.toDate());
+    return '';
+  }
+
+  function renderRows(docs){
+    if (!docs.length){
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">No records found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = docs.map((d)=>{
+      const dateStr = normalizeDate(d.date);
+      const day = d.day || new Date(dateStr).toLocaleDateString(undefined, { weekday:'long' });
+      const subjects = Array.isArray(d.subjects) ? d.subjects.join(', ') : (d.subjects || '—');
+      const updatedBy = d.updatedBy || 'Unknown';
+      return `<tr>
+        <td>${dateStr || '—'}</td>
+        <td>${day || '—'}</td>
+        <td>${subjects}</td>
+        <td>${updatedBy}</td>
+      </tr>`; 
+    }).join('');
+  }
+
+  async function fetchBetweenDates(fromStr, toStr){
+    const col = collection(db, 'attendance');
+    try{
+      const q = query(col, where('date', '>=', fromStr), where('date', '<=', toStr), orderBy('date'));
+      const snap = await getDocs(q);
+      return snap.docs.map(d=>d.data());
+    }catch(err){
+      if (err && (err.code === 'failed-precondition' || err.code === 'invalid-argument')){
+        const snap = await getDocs(col);
+        return snap.docs.map(d=>d.data()).filter(row=>{
+          const ds = normalizeDate(row.date);
+          return ds && ds >= fromStr && ds <= toStr;
+        });
+      }
+      throw err;
+    }
+  }
+
+  async function runFilter(){
+    const from = fromEl.value; const to = toEl.value;
+    if (!from || !to){ setMsg('Please select both From and To dates.', 'err'); return; }
+    tbody.innerHTML = '<tr><td colspan="4" class="muted">Loading…</td></tr>';
+
+    try{
+      let rows = await fetchBetweenDates(from, to);
+      const selectedSubjects = Array.from(subjectFilter.selectedOptions).map(opt=>opt.value);
+      if (selectedSubjects.length){
+        rows = rows.filter(r => Array.isArray(r.subjects) && selectedSubjects.every(s => r.subjects.includes(s)));
+      }
+      renderRows(rows);
+      setMsg(`Loaded ${rows.length} record(s).`, 'ok');
+      populateSubjectOptions(rows);
+    }catch(err){
+      if (err && err.code === 'permission-denied'){
+        setMsg('Permission denied. Requires teacher role.', 'err');
+      } else {
+        setMsg(`Error: ${err?.message || err}`, 'err');
+      }
+      if (tbody.innerText.includes('Loading')){
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">No data due to error</td></tr>';
+      }
+    }
+  }
+
+  function populateSubjectOptions(rows){
+    const subjects = new Set();
+    rows.forEach(r => {
+      if (Array.isArray(r.subjects)){
+        r.subjects.forEach(s => subjects.add(s));
+      }
+    });
+    const current = Array.from(subjectFilter.selectedOptions).map(o=>o.value);
+    subjectFilter.innerHTML = '';
+    [...subjects].sort().forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (current.includes(s)) opt.selected = true;
+      subjectFilter.appendChild(opt);
+    });
+  }
+
+  filterBtn.addEventListener('click', runFilter);
+
+  logoutBtn.addEventListener('click', async ()=>{
+    try {
+      await signOut(auth);
+      window.location.href = "index10.html"; // Redirect to login page after logout
+    } catch (e) {
+      setMsg(`Logout failed: ${e.message}`, 'err');
+    }
+  });
+
+  dashboardBtn.addEventListener('click', ()=>{
+    window.location.href = "index10.html"; // Back to dashboard
+  });
+
+  onAuthStateChanged(auth, (user)=>{
+    if (!user){
+      window.location.href = "index10.html"; // Redirect to login page if not signed in
+      return;
+    }
+    setMsg(`Signed in as ${user.email || user.uid}. You can filter now.`, 'ok');
+  });
+</script>
+</body>
+</html>
