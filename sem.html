@@ -5,55 +5,169 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Class Records - Teacher View</title>
   <style>
-    :root{
-      --ink:#2c3e50;--ink-2:#34495e;--bg:#eef2f7;--brand:#3498db;--brand-2:#2980b9;--ok:#27ae60;--warn:#e67e22;--err:#e74c3c
+    :root {
+      --ink:#2c3e50;
+      --ink-2:#34495e;
+      --bg:#f5f7fa;
+      --brand:#3498db;
+      --brand-2:#2980b9;
+      --ok:#27ae60;
+      --warn:#e67e22;
+      --err:#e74c3c;
     }
-    *{box-sizing:border-box}
-    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: var(--bg); margin: 0; }
-    header { background-color: var(--ink); color: white; padding: 22px; text-align: center; display:flex; justify-content:space-between; align-items:center; gap:10px }
-    header h1 { margin:0; font-size:1.5rem }
-    .header-actions { display:flex; gap:10px }
-    .container { max-width: 1100px; margin: 32px auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-    h2 { margin: 0 0 16px; color: var(--ink); }
-    .row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom: 8px; }
-    label { display:flex; align-items:center; gap:8px; font-weight:600; color:#475569 }
-    input[type="date"], select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background:#fff; }
-    button { padding: 10px 18px; border: none; border-radius: 8px; background-color: var(--brand); color: white; cursor: pointer; font-weight:600 }
-    button:hover { background-color: var(--brand-2); }
+    * { box-sizing:border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      margin: 0;
+      color: var(--ink);
+    }
 
-    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 8px; display:none; font-weight:600 }
-    .msg.show{ display:block }
-    .msg.info{ background:#e0f2fe; color:#0c4a6e }
-    .msg.err{ background:#fee2e2; color:#7f1d1d }
-    .msg.ok{ background:#dcfce7; color:#14532d }
+    /* Header */
+    header {
+      background-color: var(--ink);
+      color: white;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,.1);
+    }
+    header h1 {
+      margin:0;
+      font-size:1.6rem;
+      font-weight:600;
+    }
+    .header-actions {
+      display:flex;
+      gap:12px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight:600;
+      cursor: pointer;
+      transition: all .2s ease;
+      box-shadow:0 2px 6px rgba(0,0,0,.12);
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.primary { background: var(--brand); color:white; }
+    .btn.primary:hover { background: var(--brand-2); }
+    .btn.danger { background: var(--err); color:white; }
+    .btn.danger:hover { background:#c0392b; }
 
-    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-    th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
-    th { background-color: var(--ink-2); color: white; }
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 32px auto;
+      background: white;
+      padding: 28px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+    }
+    h2 {
+      margin-top:0;
+      margin-bottom:16px;
+      font-size:1.25rem;
+      font-weight:600;
+    }
+
+    /* Filter row */
+    .filters {
+      display:flex;
+      flex-wrap:wrap;
+      gap:16px;
+      padding:16px;
+      margin-bottom:20px;
+      background:#f9fafb;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
+    }
+    label {
+      display:flex;
+      flex-direction:column;
+      font-size:0.9rem;
+      font-weight:600;
+      color:#475569;
+    }
+    input[type="date"], select {
+      margin-top:6px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size:0.95rem;
+      background:#fff;
+    }
+    select[multiple] { min-width:220px; }
+
+    /* Status messages */
+    .msg {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight:600;
+      display:none;
+      transition: all .3s ease;
+    }
+    .msg.show { display:block; }
+    .msg.info { background:#e0f2fe; color:#0c4a6e; }
+    .msg.err { background:#fee2e2; color:#7f1d1d; }
+    .msg.ok { background:#dcfce7; color:#14532d; }
+
+    /* Table */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 18px;
+      border-radius: 10px;
+      overflow:hidden;
+      box-shadow:0 2px 6px rgba(0,0,0,.05);
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 12px;
+      text-align: center;
+      font-size:0.95rem;
+    }
+    th {
+      background-color: var(--ink-2);
+      color: white;
+      font-weight:600;
+    }
     tr:nth-child(even) { background-color: #f8fafc; }
-    tr:hover { background-color: #f1f5f9; }
+    tr:hover td { background-color: #f1f5f9; }
 
-    .muted { color:#64748b; font-style: italic }
+    .muted { color:#64748b; font-style: italic; }
   </style>
 </head>
 <body>
 <header>
-  <h1>Teacher View - Classes Between Dates</h1>
+  <h1>📘 Teacher View – Class Records</h1>
   <div class="header-actions">
-    <button id="dashboard-btn">Back to Dashboard</button>
-    <button id="logout-btn">Logout</button>
+    <button id="dashboard-btn" class="btn primary">⬅ Dashboard</button>
+    <button id="logout-btn" class="btn danger">Logout</button>
   </div>
 </header>
+
 <div class="container">
   <h2>Filter Classes</h2>
-  <div class="row">
-    <label>From: <input type="date" id="from-date"></label>
-    <label>To: <input type="date" id="to-date"></label>
-    <label>Subjects: 
-      <select id="subject-filter" multiple size="4" style="min-width:200px"></select>
+  <div class="filters">
+    <label>From
+      <input type="date" id="from-date">
     </label>
-    <button id="filter-btn" title="Load classes in the selected range">Filter</button>
+    <label>To
+      <input type="date" id="to-date">
+    </label>
+    <label>Subjects
+      <select id="subject-filter" multiple size="4"></select>
+    </label>
+    <div style="align-self:end;">
+      <button id="filter-btn" class="btn primary" title="Load classes">Apply Filter</button>
+    </div>
   </div>
+
   <div id="status" class="msg info">Initializing…</div>
 
   <table id="class-table" aria-label="Filtered classes table">
@@ -65,7 +179,9 @@
         <th>Updated By</th>
       </tr>
     </thead>
-    <tbody id="class-body"><tr><td colspan="4" class="muted">Select a date range and click Filter</td></tr></tbody>
+    <tbody id="class-body">
+      <tr><td colspan="4" class="muted">Select a date range and click Apply Filter</td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -208,19 +324,19 @@
   logoutBtn.addEventListener('click', async ()=>{
     try {
       await signOut(auth);
-      window.location.href = "index10.html"; // Redirect to login page after logout
+      window.location.href = "index10.html";
     } catch (e) {
       setMsg(`Logout failed: ${e.message}`, 'err');
     }
   });
 
   dashboardBtn.addEventListener('click', ()=>{
-    window.location.href = "index10.html"; // Back to dashboard
+    window.location.href = "index10.html";
   });
 
   onAuthStateChanged(auth, (user)=>{
     if (!user){
-      window.location.href = "index10.html"; // Redirect to login page if not signed in
+      window.location.href = "index10.html";
       return;
     }
     setMsg(`Signed in as ${user.email || user.uid}. You can filter now.`, 'ok');
