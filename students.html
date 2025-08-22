@@ -56,6 +56,7 @@
       background:#f9fafb; 
       border:1px solid #e2e8f0; 
       border-radius:8px;
+      align-items: center;
     }
     .filters input[type="text"], 
     .filters input[type="date"] {
@@ -118,6 +119,9 @@
       <input id="search-box" type="text" placeholder=" Search student...">
       <label>From: <input id="start-date" type="date"></label>
       <label>To: <input id="end-date" type="date"></label>
+      <!-- Semester Buttons -->
+      <button id="sem1-btn" class="btn" style="background:#8e44ad; color:white;">Sem 1</button>
+      <button id="sem2-btn" class="btn" style="background:#d35400; color:white;">Sem 2</button>
     </div>
 
     <h2>All Students</h2>
@@ -166,10 +170,33 @@
     const logoutBtn = document.getElementById('logout-btn');
     const backBtn = document.getElementById('back-btn');
     const downloadBtn = document.getElementById('download-csv');
+    const startDateEl = document.getElementById('start-date');
+    const endDateEl = document.getElementById('end-date');
+    const sem1Btn = document.getElementById('sem1-btn');
+    const sem2Btn = document.getElementById('sem2-btn');
 
     let lastReport = null;
     let currentStudentName = "";
     let allStudents = [];
+
+    // Semester Date Setter
+    function setSemesterDates(sem) {
+      const year = new Date().getFullYear();
+      if (sem === 1) {
+        startDateEl.value = `${year}-06-30`;
+        endDateEl.value   = `${year}-12-06`;
+      } else {
+        startDateEl.value = `${year}-12-08`;
+        endDateEl.value   = `${year}-06-17`;
+      }
+      
+      if (currentStudentName) {
+        loadStudentAttendance(currentStudentName);
+      }
+    }
+
+    sem1Btn.addEventListener('click', () => setSemesterDates(1));
+    sem2Btn.addEventListener('click', () => setSemesterDates(2));
 
     // Logout
     logoutBtn.addEventListener('click', async () => {
@@ -243,8 +270,8 @@
       const snap = await getDocs(collection(db, "attendance"));
 
       const subjectStats = {};
-      const startDate = document.getElementById("start-date").value;
-      const endDate = document.getElementById("end-date").value;
+      const startDate = startDateEl.value;
+      const endDate = endDateEl.value;
 
       snap.forEach(doc => {
         const docId = doc.id; // e.g., "Monday_2025-08-20"
