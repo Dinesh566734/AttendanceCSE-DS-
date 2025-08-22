@@ -133,14 +133,7 @@
 <body>
 <header style="display:flex; justify-content:space-between; align-items:center; padding:20px; background:#2c3e50; color:white;">
   <h1 style="margin:0;">Attendance System For CSE(DS)</h1>
-  <button onclick="window.location.href='students.html'" 
-          style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">  Student Attendance Overview
-</button>
 
-  <button onclick="window.location.href='sem.html'" 
-          style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">
-    View Class Records
-  </button>
 </header>
 
 
@@ -159,9 +152,9 @@
       <label style="min-width:280px">Email:<br/><input type="text" id="username" placeholder="Enter email" autocomplete="username" /></label>
       <label style="min-width:280px">Password:<br/><input type="password" id="password" placeholder="Enter password" autocomplete="current-password" /></label>
     </div>
-     <div class="row">
+     <!-- <div class="row">
       <div class="g-recaptcha" data-sitekey="6Lf3HqYrAAAAAAMj597dHly9qhUC5LF-BKdemUnN"></div>
-    </div> 
+    </div>  -->
     <div class="row">
       <button id="login-btn">Login</button>
       <button id="forgot-btn" class="muted">Forgot password</button>
@@ -196,6 +189,14 @@
     </div>
 
     <!-- TEACHER: Start QR Session -->
+       <button onclick="window.location.href='students.html'" 
+          style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">  Student Attendance Overview
+</button>
+
+  <button onclick="window.location.href='sem.html'" 
+          style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">
+    View Class Records
+  </button>
     <div id="qr-session-box" class="notice" style="display:none; margin-top:12px;">
       <div class="row">
         <strong>QR + Geolocation session (teacher)</strong>
@@ -251,7 +252,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-MnQnQf9O9Vf6xNmKxN0h7Qb0sN7c5F6aFqbKp1q5mHcK2lYt8nqf3zZbX2p8n2l0J3O7yZQ0Nw7Qx9mDxQ8Zig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <!-- Google reCAPTCHA -->
- <script src="https://www.google.com/recaptcha/api.js" async defer></script> 
+ <!-- <script src="https://www.google.com/recaptcha/api.js" async defer></script>  -->
 
 <script type="module">
 
@@ -710,11 +711,11 @@ new QRCode(document.getElementById("qrcode"), qrData);
   loginBtn.addEventListener('click', async () => {
     const email = (document.getElementById('username').value || '').trim();
     const pass = (document.getElementById('password').value || '').trim();
-     const captchaResponse = grecaptcha.getResponse();
-     if (!captchaResponse) {
-      loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
-       return;
-     }
+    //  const captchaResponse = grecaptcha.getResponse();
+    //  if (!captchaResponse) {
+    //   loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
+    //    return;
+    //  }
     if (!email || !pass) {
       loginTroubleshoot.style.display = '';
       loginFeedback.innerHTML = `<div class="error">Please enter both email and password.</div>`;
