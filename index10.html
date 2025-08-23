@@ -133,7 +133,7 @@
 <body>
 <header style="display:flex; justify-content:space-between; align-items:center; padding:20px; background:#2c3e50; color:white;">
   <h1 style="margin:0;">Attendance System For CSE(DS)</h1>
-
+  
 </header>
 
 
@@ -152,9 +152,10 @@
       <label style="min-width:280px">Email:<br/><input type="text" id="username" placeholder="Enter email" autocomplete="username" /></label>
       <label style="min-width:280px">Password:<br/><input type="password" id="password" placeholder="Enter password" autocomplete="current-password" /></label>
     </div>
-     <!-- <div class="row">
+     
+    <div class="row">
       <div class="g-recaptcha" data-sitekey="6Lf3HqYrAAAAAAMj597dHly9qhUC5LF-BKdemUnN"></div>
-    </div>  -->
+    </div>  
     <div class="row">
       <button id="login-btn">Login</button>
       <button id="forgot-btn" class="muted">Forgot password</button>
@@ -173,23 +174,42 @@
 
   <!-- APP -->
   <div id="attendance-section" class="hidden">
-    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin: 0;">Mark Attendance</h2>
-    </div>
-    <h3 style="color:red; margin-top:-6px;">It is mandatory to select Saved Records before saving attendance. Otherwise all data will be lost</h3>
+    
 
     <div id="user-role-info" class="muted" style="margin-bottom:10px"></div>
     <div id="missing-role" class="error" style="display:none;"></div>
 
     <div class="row">
-      <label>Select Day: <select id="day-select"></select></label>
-      <label>Date: <input type="date" id="date-select"></label>
+      
       <label>Saved Records: <select required id="saved-dates"></select></label>
       <button id="logout-btn" class="danger-btn">Logout</button>
+      <button onclick="window.location.href='private.html'" 
+          style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">
+    Click to Check your Attendance
+  </button>
     </div>
 
     <!-- TEACHER: Start QR Session -->
-       <button onclick="window.location.href='students.html'" 
+       
+    <div id="qr-session-box" class="notice" style="display:none; margin-top:12px;">
+      <div class="row" style="justify-content: space-between; align-items: center; ">
+      <!-- <h2 style="margin: 0;">Mark Attendance</h2> -->
+       <h2 style="margin: 0;">Instructions to Mark Attendance:</h2>
+    </div>
+    
+    <p >Step1: Select a Saved Record. If the required record is not found, Select Day, Date and Subject. <br>
+      Step2: Start taking attendance by ticking the boxes. If the Required Subject is not found then add the subject.<br> 
+      Step3(Important): Click "Save Attendance" to save the record.<br>     
+    </p>
+      
+      <!-- <div class="row">
+        <strong>QR + Geolocation session (teacher)</strong>
+      </div> -->
+      <div class="row">
+        <label>Select Day: <select id="day-select"></select></label>
+      <label>Date: <input type="date" id="date-select"></label>
+        <label>Subject: <select id="subject-select"></select></label>
+        <button onclick="window.location.href='students.html'" 
           style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">  Student Attendance Overview
 </button>
 
@@ -197,40 +217,40 @@
           style="padding:10px 18px; border:none; border-radius:8px; background-color:#3498db; color:white; cursor:pointer; font-weight:600; font-size:1rem;">
     View Class Records
   </button>
-    <div id="qr-session-box" class="notice" style="display:none; margin-top:12px;">
-      <div class="row">
-        <strong>QR + Geolocation session (teacher)</strong>
-      </div>
-      <div class="row">
-        <label>Subject: <select id="subject-select"></select></label>
-        <label>Radius (m): <input id="radius-input" type="number" min="5" max="200" step="1" value="35" /></label>
-        <label>Expires in (min): <input id="expire-mins" type="number" min="1" max="15" step="1" value="3" /></label>
-        <button id="set-class-here">Use my current location</button>
+        <!-- <label>Radius (m): <input id="radius-input" type="number" min="5" max="200" step="1" value="35" /></label>
+        <label>Expires in (min): <input id="expire-mins" type="number" min="1" max="15" step="1" value="3" /></label> -->
+        <!-- <button id="set-class-here">Use my current location</button>
         <button id="start-qr-btn">Start QR Session</button>
-        <button id="end-qr-btn" class="danger-btn" style="display:none;">End Session</button>
+        <button id="end-qr-btn" class="danger-btn" style="display:none;">End Session</button> -->
       </div>
+      <div id="add-class-section" class="row">
+      <input type="text" id="new-class-name" placeholder="Enter new class/subject">
+      <button id="add-class-btn">Add Class</button>
+      <div id="teacher-buttons" class="row">
+      <button id="save-btn">Save Attendance</button>
+      <button id="export-btn">Export as CSV</button>
+      <button id="toggle-auto-update">🔄 Auto-Update: ON</button>
+    </div>
+    </div>
       <div id="qr-box" class="hidden">
         <div id="qrcode"></div>
-        <div>
+        <!-- <div>
           <div id="qr-info" class="muted"></div>
           <small>Students: open your camera, scan the QR, tap the link, allow location, done.</small>
-        </div>
+        </div> -->
       </div>
     </div>
     <!-- Add class input (hidden for viewers) -->
-    <div id="add-class-section" class="row">
-      <input type="text" id="new-class-name" placeholder="Enter new class/subject">
-      <button id="add-class-btn">Add Class</button>
-    </div>
+    
 
     <!-- STUDENT: Token detected -->
-    <div id="scan-status" class="notice hidden"></div>
+    <!-- <div id="scan-status" class="notice hidden"></div>
      <h1>Mark Attendance</h1>
   <input type="text" id="qrInput" placeholder="Paste scanned QR content" />
-  <button onclick="markAttendance()">Submit</button>
+  <button onclick="markAttendance()">Submit</button> -->
 
     <div class="table-container">
-      <table id="attendance-table">
+      <table id="attendance-table">    
         <thead>
           <tr id="table-header"></tr>
         </thead>
@@ -252,7 +272,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-MnQnQf9O9Vf6xNmKxN0h7Qb0sN7c5F6aFqbKp1q5mHcK2lYt8nqf3zZbX2p8n2l0J3O7yZQ0Nw7Qx9mDxQ8Zig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <!-- Google reCAPTCHA -->
- <!-- <script src="https://www.google.com/recaptcha/api.js" async defer></script>  -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>  
 
 <script type="module">
 
@@ -262,7 +282,7 @@ const port = 5500;
 const filePath = "index.html"; // Your attendance page
 
 const qrData = `http://${pcIP}:${port}/${filePath}`;
-new QRCode(document.getElementById("qrcode"), qrData);
+// new QRCode(document.getElementById("qrcode"), qrData);      //uncomment this line to generate QR code for the attendance page
 
   /*************************************
    * Firebase SDKs (v9 modular)
@@ -711,11 +731,11 @@ new QRCode(document.getElementById("qrcode"), qrData);
   loginBtn.addEventListener('click', async () => {
     const email = (document.getElementById('username').value || '').trim();
     const pass = (document.getElementById('password').value || '').trim();
-    //  const captchaResponse = grecaptcha.getResponse();
-    //  if (!captchaResponse) {
-    //   loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
-    //    return;
-    //  }
+      const captchaResponse = grecaptcha.getResponse();
+      if (!captchaResponse) {
+       loginFeedback.innerHTML = `<div class="error">Please complete the CAPTCHA.</div>`;
+        return;
+     }
     if (!email || !pass) {
       loginTroubleshoot.style.display = '';
       loginFeedback.innerHTML = `<div class="error">Please enter both email and password.</div>`;
@@ -938,21 +958,35 @@ tableHeader.innerHTML = headerHTML;
     }
   }
 
-  async function loadSavedDates() {
-    savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
-    try {
-      const querySnapshot = await getDocs(collection(db, 'attendance'));
-      querySnapshot.forEach(docSnap => {
-        const option = document.createElement('option');
-        option.value = docSnap.id;
-        option.textContent = docSnap.id;
-        savedDates.appendChild(option);
-      });
-    } catch (e) {
-      console.error(e);
-      alert('Failed to load saved records (check Firestore rules).');
-    }
+ async function loadSavedDates() {
+  savedDates.innerHTML = '<option value="">-- Select Saved Record --</option>';
+  try {
+    const querySnapshot = await getDocs(collection(db, 'attendance'));
+    const records = [];
+
+    querySnapshot.forEach(docSnap => {
+      records.push(docSnap.id);
+    });
+
+    // Extract the date part from IDs like "Monday_2025-08-20" and sort in descending order
+    records.sort((a, b) => {
+      const dateA = new Date(a.split('_')[1]);
+      const dateB = new Date(b.split('_')[1]);
+      return dateB - dateA;
+    });
+
+    records.forEach(recordId => {
+      const option = document.createElement('option');
+      option.value = recordId;
+      option.textContent = recordId;
+      savedDates.appendChild(option);
+    });
+  } catch (e) {
+    console.error(e);
+    alert('Failed to load saved records (check Firestore rules).');
   }
+}
+
 
   function addClass() {
     if (currentRole === 'viewer') return;
