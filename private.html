@@ -1,70 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Student Attendance</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f5f7fa; color:#2c3e50; }
-    header { background:#2c3e50; color:white; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
-    header h1 { margin:0; font-size:1.4rem; }
-    .btn { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:600; transition:all .2s ease; }
+    :root {
+      --ink:#2c3e50;
+      --ink-2:#34495e;
+      --bg:#f5f7fa;
+      --brand:#3498db;
+      --brand-2:#2980b9;
+      --ok:#27ae60;
+      --warn:#f39c12;
+      --err:#e74c3c;
+    }
+
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'Segoe UI', system-ui, sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+    }
+
+    header {
+      background:var(--ink);
+      color:white;
+      padding:16px 24px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 2px 6px rgba(0,0,0,.15);
+    }
+    header h1 {
+      margin:0;
+      font-size:1.35rem;
+      font-weight:600;
+      letter-spacing:.3px;
+    }
+
+    .btn {
+      padding:8px 14px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:0.95rem;
+      transition:all .2s ease;
+    }
     .btn:hover { transform:translateY(-1px); }
-    .btn.danger { background:#e74c3c; color:white; }
-    .btn.danger:hover { background:#c0392b; }
-    .btn.primary { background:#3498db; color:white; }
-    .btn.primary:hover { background:#2980b9; }
+    .btn.primary { background:var(--brand); color:white; }
+    .btn.primary:hover { background:var(--brand-2); }
     .btn.secondary { background:#95a5a6; color:white; }
     .btn.secondary:hover { background:#7f8c8d; }
-    .container { max-width:1000px; margin:24px auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.1); }
-    .filters { 
-      display:flex; 
-      gap:12px; 
-      margin-bottom:20px; 
-      flex-wrap:wrap; 
+    .btn.danger { background:var(--err); color:white; }
+    .btn.danger:hover { background:#c0392b; }
+
+    .container {
+      max-width:1100px;
+      margin:28px auto;
+      background:white;
+      padding:28px;
+      border-radius:14px;
+      box-shadow:0 6px 16px rgba(0,0,0,.08);
+    }
+
+    /* Filters */
+    .filters {
+      display:flex;
+      flex-wrap:wrap;
+      gap:18px;
       align-items:end;
       padding:16px;
+      margin-bottom:24px;
       background:#f8f9fa;
-      border-radius:8px;
+      border-radius:10px;
       border:1px solid #e9ecef;
     }
     .filter-group {
       display:flex;
       flex-direction:column;
-      gap:4px;
+      gap:6px;
     }
     .filter-group label {
       font-size:0.9rem;
       font-weight:600;
       color:#495057;
     }
-    input[type="date"] { 
-      padding:8px; 
-      border:1px solid #ced4da; 
-      border-radius:6px; 
-      font-size:0.9rem;
+    input[type="date"] {
+      padding:9px;
+      border:1px solid #ced4da;
+      border-radius:8px;
+      font-size:0.95rem;
+      min-width:150px;
     }
     .semester-buttons {
       display:flex;
-      gap:8px;
-      align-items:end;
+      gap:10px;
+      flex-wrap:wrap;
     }
-    h2 { margin-top:0; color:#2c3e50; }
-    h3 { color:#34495e; margin-top:24px; margin-bottom:12px; }
-    table { width:100%; border-collapse:collapse; margin-top:16px; border-radius:8px; overflow:hidden; }
-    th, td { border:1px solid #e2e8f0; padding:10px; text-align:center; font-size:0.95rem; }
-    th { background:#34495e; color:white; font-weight:600; }
-    tr:nth-child(even) { background:#f9fafb; }
-    tr:hover { background:#f1f5f9; }
-    .muted { color:#64748b; font-style:italic; }
-    .status-present { color:#27ae60; font-weight:600; }
-    .status-absent { color:#e74c3c; font-weight:600; }
-    .percentage {
+
+    h2 { margin-top:0; margin-bottom:10px; color:var(--ink-2); font-size:1.2rem; }
+    h3 { color:var(--ink-2); margin-top:28px; margin-bottom:12px; font-size:1.05rem; }
+
+    /* Tables */
+    table {
+      width:100%;
+      border-collapse:collapse;
+      margin-top:14px;
+      border-radius:10px;
+      overflow:hidden;
+      font-size:0.95rem;
+    }
+    th, td {
+      border:1px solid #e2e8f0;
+      padding:12px;
+      text-align:center;
+    }
+    th {
+      background:var(--ink-2);
+      color:white;
       font-weight:600;
     }
-    .percentage.good { color:#27ae60; }
-    .percentage.warning { color:#f39c12; }
-    .percentage.danger { color:#e74c3c; }
+    tr:nth-child(even) { background:#f9fafb; }
+    tbody tr:hover td { background:#f1f5f9; }
+
+    .muted { color:#64748b; font-style:italic; }
+    .status-present { color:var(--ok); font-weight:600; }
+    .status-absent { color:var(--err); font-weight:600; }
+
+    .percentage { font-weight:600; }
+    .percentage.good { color:var(--ok); }
+    .percentage.warning { color:var(--warn); }
+    .percentage.danger { color:var(--err); }
+
+    /* Responsive */
+    @media(max-width:768px){
+      header { flex-direction:column; gap:10px; align-items:flex-start; }
+      .filters { flex-direction:column; }
+      .btn { width:100%; }
+      table { font-size:0.85rem; }
+    }
   </style>
 </head>
 <body>
@@ -84,8 +160,8 @@
         <input type="date" id="to-date">
       </div>
       <div class="semester-buttons">
-        <button id="sem1-btn" class="btn secondary">Sem 1</button>
-        <button id="sem2-btn" class="btn secondary">Sem 2</button>
+        <button id="sem1-btn" class="btn secondary">Semester 1</button>
+        <button id="sem2-btn" class="btn secondary">Semester 2</button>
         <button id="filter-btn" class="btn primary">Apply Filter</button>
       </div>
     </div>
@@ -95,19 +171,36 @@
     <h3> Attendance Summary</h3>
     <table>
       <thead>
-        <tr><th>Subject</th><th>Classes Attended</th><th>Total Classes</th><th>Attendance %</th></tr>
+        <tr>
+          <th>Subject</th>
+          <th>Classes Attended</th>
+          <th>Total Classes</th>
+          <th>Attendance %</th>
+        </tr>
       </thead>
-      <tbody id="summary-body"><tr><td colspan="4" class="muted">No data available</td></tr></tbody>
+      <tbody id="summary-body">
+        <tr><td colspan="4" class="muted">No data available</td></tr>
+      </tbody>
     </table>
 
     <h3> Day-wise Attendance Details</h3>
     <table>
       <thead>
-        <tr><th>Date</th><th>Day</th><th>Subject</th><th>Status</th></tr>
+        <tr>
+          <th>Date</th>
+          <th>Day</th>
+          <th>Subject</th>
+          <th>Status</th>
+        </tr>
       </thead>
-      <tbody id="details-body"><tr><td colspan="4" class="muted">No data available</td></tr></tbody>
+      <tbody id="details-body">
+        <tr><td colspan="4" class="muted">No data available</td></tr>
+      </tbody>
     </table>
   </div>
+
+  
+
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
