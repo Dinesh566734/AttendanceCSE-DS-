@@ -5,92 +5,113 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Student Attendance Overview</title>
   <style>
+    :root {
+      --ink:#2c3e50;
+      --ink-2:#34495e;
+      --bg:#f4f6f9;
+      --brand:#3498db;
+      --ok:#27ae60;
+      --warn:#f39c12;
+      --err:#e74c3c;
+    }
+
     body { 
-      font-family: 'Segoe UI', sans-serif; 
+      font-family:'Segoe UI',sans-serif; 
       margin:0; 
-      background:#f4f6f9; 
-      color:#2c3e50;
+      background:var(--bg); 
+      color:var(--ink);
     }
     header { 
-      background:#2c3e50; 
+      background:var(--ink); 
       color:white; 
       padding:16px 24px; 
       display:flex; 
       justify-content:space-between; 
       align-items:center; 
-      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
     }
-    header h1 { margin:0; font-size:1.6rem; font-weight:600; }
+    header h1 { margin:0; font-size:1.45rem; font-weight:600; }
+
     .btn { 
-      padding:10px 16px; 
+      padding:8px 14px; 
       border:none; 
       border-radius:8px; 
       font-weight:600; 
       cursor:pointer; 
-      transition: all 0.2s ease;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+      transition:all .2s ease;
+      font-size:0.95rem;
     }
-    .btn:hover { transform:translateY(-2px); }
-    #logout-btn { background:#e74c3c; color:white; }
+    .btn:hover { transform:translateY(-1px); }
+    #logout-btn { background:var(--err); color:white; }
     #logout-btn:hover { background:#c0392b; }
-    #back-btn { background:#3498db; color:white; margin-right:10px; }
+    #back-btn { background:var(--brand); color:white; margin-right:8px; }
     #back-btn:hover { background:#2980b9; }
-    #download-csv { background:#27ae60; color:white; margin-top:15px; display:none; }
+    #download-csv { background:var(--ok); color:white; margin-top:15px; display:none; }
     #download-csv:hover { background:#1e874b; }
-    
+
     .container { 
       max-width:1200px; 
-      margin:24px auto; 
-      padding:24px; 
+      margin:28px auto; 
+      padding:28px; 
       background:white; 
-      border-radius:12px; 
-      box-shadow:0 4px 16px rgba(0,0,0,.08);
+      border-radius:14px; 
+      box-shadow:0 6px 16px rgba(0,0,0,.08);
     }
 
+    /* Filters */
     .filters {
       display:flex; 
       flex-wrap:wrap; 
-      gap:12px; 
-      margin-bottom:20px; 
-      padding:12px; 
+      gap:16px; 
+      margin-bottom:24px; 
+      padding:14px; 
       background:#f9fafb; 
       border:1px solid #e2e8f0; 
-      border-radius:8px;
-      align-items: center;
+      border-radius:10px;
+      align-items:flex-end;
+    }
+    .filters label {
+      font-size:0.9rem;
+      font-weight:600;
+      color:#555;
     }
     .filters input[type="text"], 
     .filters input[type="date"] {
-      padding:10px; 
+      padding:9px; 
       border:1px solid #cbd5e0; 
       border-radius:6px; 
       font-size:0.95rem;
     }
+    .filters input[type="text"] { min-width:220px; }
+    .filters button { font-size:0.85rem; padding:8px 12px; }
 
-    h2 { margin-top:0; }
-
-    ul { 
+    /* Student list */
+    h2 { margin:10px 0 12px; }
+    #student-list { 
       list-style:none; 
       padding:0; 
       margin:0; 
-      max-height:250px; 
+      max-height:260px; 
       overflow-y:auto; 
       border:1px solid #e2e8f0; 
       border-radius:8px;
     }
-    li { 
+    #student-list li { 
       padding:12px 14px; 
       border-bottom:1px solid #edf2f7; 
       cursor:pointer; 
-      transition:background 0.2s ease;
+      transition:background 0.2s ease, color 0.2s ease;
     }
-    li:hover { background:#f1f5f9; }
-    li:last-child { border-bottom:none; }
+    #student-list li:hover { background:#f1f5f9; color:var(--brand); }
+    #student-list li:last-child { border-bottom:none; }
+    .muted { color:#777; font-style:italic; padding:12px; }
 
+    /* Tables */
     table { 
       border-collapse:collapse; 
       width:100%; 
       margin-top:20px; 
-      border-radius:8px; 
+      border-radius:10px; 
       overflow:hidden; 
       box-shadow:0 2px 6px rgba(0,0,0,.05);
     }
@@ -100,32 +121,47 @@
       text-align:center; 
       font-size:0.95rem;
     }
-    th { background:#34495e; color:white; font-weight:600; }
+    th { background:var(--ink-2); color:white; font-weight:600; }
     tr:nth-child(even){ background:#f8fafc; }
-    tr:hover td { background:#f1f5f9; }
+    tbody tr:hover td { background:#f1f5f9; }
+
+    .percentage { font-weight:600; }
+    .percentage.good { color:var(--ok); }
+    .percentage.warn { color:var(--warn); }
+    .percentage.bad { color:var(--err); }
+
+    @media(max-width:768px){
+      header { flex-direction:column; gap:10px; align-items:flex-start; }
+      .filters { flex-direction:column; align-items:flex-start; }
+      .filters input, .filters button { width:100%; }
+      table { font-size:0.85rem; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Student Attendance Overview</h1>
+    <h1> Student Attendance Overview</h1>
     <div>
-      <button id="back-btn" class="btn">⬅ Back to Dashboard</button>
+      <button id="back-btn" class="btn">⬅ Back</button>
       <button id="logout-btn" class="btn">Logout</button>
     </div>
   </header>
   
   <div class="container">
     <div class="filters">
-      <input id="search-box" type="text" placeholder=" Search student...">
-      <label>From: <input id="start-date" type="date"></label>
-      <label>To: <input id="end-date" type="date"></label>
-      <!-- Semester Buttons -->
-      <button id="sem1-btn" class="btn" style="background:#8e44ad; color:white;">Sem 1</button>
-      <button id="sem2-btn" class="btn" style="background:#d35400; color:white;">Sem 2</button>
+      <input id="search-box" type="text" placeholder="🔍 Search student...">
+      <div>
+        <label>From<br><input id="start-date" type="date"></label>
+      </div>
+      <div>
+        <label>To<br><input id="end-date" type="date"></label>
+      </div>
+      <button id="sem1-btn" class="btn" style="background:#8e44ad; color:white;">Semester 1</button>
+      <button id="sem2-btn" class="btn" style="background:#d35400; color:white;">Semester 2</button>
     </div>
 
-    <h2>All Students</h2>
-    <ul id="student-list"><li>Loading students…</li></ul>
+    <h2> All Students</h2>
+    <ul id="student-list"><li class="muted">Loading students…</li></ul>
 
     <div id="student-details" style="display:none;">
       <h2 id="student-name"></h2>
@@ -138,11 +174,16 @@
             <th>Average (%)</th>
           </tr>
         </thead>
-        <tbody id="attendance-body"></tbody>
+        <tbody id="attendance-body">
+          <tr><td colspan="4" class="muted">Select a student to view details</td></tr>
+        </tbody>
       </table>
       <button id="download-csv" class="btn">⬇ Download CSV</button>
     </div>
   </div>
+
+  
+
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
