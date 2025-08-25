@@ -3,94 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Class Records - Teacher View</title>
+  <title>Class Records – Teacher View</title>
   <style>
     :root {
-      --ink:#2c3e50;
-      --ink-2:#34495e;
-      --bg:#f5f7fa;
-      --brand:#3498db;
-      --brand-2:#2980b9;
-      --ok:#27ae60;
-      --warn:#e67e22;
-      --err:#e74c3c;
+      --ink:#1f2937;
+      --ink-2:#374151;
+      --bg:#f9fafb;
+      --brand:#2563eb;
+      --brand-2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#d97706;
+      --err:#dc2626;
+      --card-bg:#ffffff;
     }
-    * { box-sizing:border-box; }
+
+    * { box-sizing:border-box; margin:0; padding:0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background-color: var(--bg);
-      margin: 0;
       color: var(--ink);
+      line-height:1.5;
     }
 
     /* Header */
     header {
-      background-color: var(--ink);
+      background: var(--ink);
       color: white;
-      padding: 18px 28px;
+      padding: 16px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
     }
     header h1 {
       margin:0;
-      font-size:1.6rem;
+      font-size:1.4rem;
       font-weight:600;
+      letter-spacing:0.5px;
+      display:flex;
+      align-items:center;
+      gap:8px;
     }
     .header-actions {
       display:flex;
-      gap:12px;
+      gap:10px;
+      flex-wrap:wrap;
     }
+
+    /* Buttons */
     .btn {
-      padding: 10px 16px;
+      padding: 8px 14px;
       border: none;
       border-radius: 8px;
       font-weight:600;
+      font-size:0.95rem;
       cursor: pointer;
       transition: all .2s ease;
-      box-shadow:0 2px 6px rgba(0,0,0,.12);
     }
-    .btn:hover { transform: translateY(-2px); }
+    .btn:hover { transform: translateY(-1px); }
     .btn.primary { background: var(--brand); color:white; }
     .btn.primary:hover { background: var(--brand-2); }
     .btn.danger { background: var(--err); color:white; }
-    .btn.danger:hover { background:#c0392b; }
+    .btn.danger:hover { background:#b91c1c; }
+    .btn.secondary { background:#e5e7eb; color:var(--ink); }
+    .btn.secondary:hover { background:#d1d5db; }
 
-    /* Container */
+    /* Main container */
     .container {
       max-width: 1200px;
-      margin: 32px auto;
-      background: white;
+      margin: 28px auto;
+      background: var(--card-bg);
       padding: 28px;
-      border-radius: 14px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.06);
     }
     h2 {
-      margin-top:0;
       margin-bottom:16px;
-      font-size:1.25rem;
+      font-size:1.2rem;
       font-weight:600;
+      color: var(--ink-2);
     }
 
-    /* Filter row */
+    /* Filters */
     .filters {
       display:flex;
       flex-wrap:wrap;
-      gap:16px;
+      gap:18px;
       padding:16px;
-      margin-bottom:20px;
-      background:#f9fafb;
-      border:1px solid #e2e8f0;
+      margin-bottom:22px;
+      background:#f3f4f6;
+      border:1px solid #e5e7eb;
       border-radius:10px;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
     }
     label {
       display:flex;
       flex-direction:column;
       font-size:0.9rem;
       font-weight:600;
-      color:#475569;
+      color:#374151;
     }
     input[type="date"], select {
       margin-top:6px;
@@ -99,6 +109,7 @@
       border-radius: 8px;
       font-size:0.95rem;
       background:#fff;
+      min-width: 150px;
     }
     select[multiple] { min-width:220px; }
 
@@ -107,66 +118,73 @@
       margin-top: 12px;
       padding: 12px 16px;
       border-radius: 10px;
-      font-weight:600;
+      font-weight:500;
       display:none;
-      transition: all .3s ease;
+      font-size:0.9rem;
     }
     .msg.show { display:block; }
-    .msg.info { background:#e0f2fe; color:#0c4a6e; }
-    .msg.err { background:#fee2e2; color:#7f1d1d; }
-    .msg.ok { background:#dcfce7; color:#14532d; }
+    .msg.info { background:#e0f2fe; color:#075985; }
+    .msg.err { background:#fee2e2; color:#991b1b; }
+    .msg.ok { background:#dcfce7; color:#166534; }
 
     /* Table */
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 18px;
-      border-radius: 10px;
+      border-radius: 8px;
       overflow:hidden;
-      box-shadow:0 2px 6px rgba(0,0,0,.05);
+      font-size:0.95rem;
     }
     th, td {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #e5e7eb;
       padding: 12px;
       text-align: center;
-      font-size:0.95rem;
     }
     th {
       background-color: var(--ink-2);
       color: white;
       font-weight:600;
+      font-size:0.95rem;
     }
-    tr:nth-child(even) { background-color: #f8fafc; }
-    tr:hover td { background-color: #f1f5f9; }
-    
+    tr:nth-child(even) { background-color: #f9fafb; }
+    tbody tr:hover td { background-color: #f1f5f9; }
+
     /* Clickable rows */
     tbody tr {
       cursor: pointer;
-      transition: all .2s ease;
+      transition: background .2s ease, transform .1s ease;
     }
     tbody tr:hover {
       background-color: #e0f2fe !important;
-      transform: scale(1.01);
-      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      transform: scale(1.005);
     }
 
-    .muted { color:#64748b; font-style: italic; }
+    .muted { color:#6b7280; font-style: italic; }
     .download-hint {
-      margin-top: 10px;
-      padding: 8px 12px;
+      margin-top: 14px;
+      padding: 10px 14px;
       background: #eff6ff;
       border: 1px solid #bfdbfe;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.85rem;
       color: #1e40af;
+    }
+
+    /* Responsive */
+    @media(max-width:768px){
+      header { flex-direction:column; align-items:flex-start; gap:10px; }
+      .filters { flex-direction:column; }
+      .btn { width:100%; }
+      select[multiple]{ width:100%; }
     }
   </style>
 </head>
 <body>
 <header>
-  <h1>📘 Teacher View – Class Records</h1>
+  <h1> Teacher – Class Records</h1>
   <div class="header-actions">
-    <button id="dashboard-btn" class="btn primary">⬅ Dashboard</button>
+    <button id="dashboard-btn" class="btn secondary">⬅ Dashboard</button>
     <button id="logout-btn" class="btn danger">Logout</button>
   </div>
 </header>
@@ -184,10 +202,9 @@
       <select id="subject-filter" multiple size="4"></select>
     </label>
 
-    <!-- Semester buttons -->
     <div style="align-self:end; display:flex; gap:8px; flex-wrap:wrap;">
-      <button id="sem1-btn" class="btn">Sem 1</button>
-      <button id="sem2-btn" class="btn">Sem 2</button>
+      <button id="sem1-btn" class="btn secondary">Semester 1</button>
+      <button id="sem2-btn" class="btn secondary">Semester 2</button>
       <button id="filter-btn" class="btn primary" title="Load classes">Apply Filter</button>
     </div>
   </div>
@@ -195,7 +212,7 @@
   <div id="status" class="msg info">Initializing…</div>
   
   <div class="download-hint">
-    💡 <strong>Tip:</strong> Click on any record to download the complete attendance for that date as a CSV file.
+     <strong>Tip:</strong> Click any record to download the complete attendance as a CSV file.
   </div>
 
   <table id="class-table" aria-label="Filtered classes table">
@@ -212,6 +229,9 @@
     </tbody>
   </table>
 </div>
+
+
+
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
